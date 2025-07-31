@@ -250,11 +250,13 @@ const handleFinalSubmit = () => {
       {/* P. Room No */}
       <div>
         <label>Room No</label>
-        <select {...register(`${titlePrefix}roomNo`)} className={inputClass}>
-          {/* options filtered based on available rooms */}
-          <option value="">Select Room No</option>
-          <option value="RG3">RG3</option>
-        </select>
+        <input
+        type='text'
+         {...register(`${titlePrefix}roomNo`)} 
+         disabled
+        className={inputClass}>
+       
+        </input>
         {renderError(`${titlePrefix}roomNo`)}
       </div>
 
@@ -264,7 +266,7 @@ const handleFinalSubmit = () => {
         <input
           type="text"
           {...register(`${titlePrefix}roomAcNonAc`)}
-          readOnly
+         disabled
           className={inputClass}
         />
         {renderError(`${titlePrefix}roomAcNonAc`)}
@@ -277,7 +279,7 @@ const handleFinalSubmit = () => {
           type="number"
           value={12000}
           {...register(`${titlePrefix}bedMonthlyRent`)}
-          readOnly
+          disabled
           className={inputClass}
         />
         {renderError(`${titlePrefix}bedMonthlyRent`)}
@@ -289,7 +291,7 @@ const handleFinalSubmit = () => {
         <input
           type="number"
           {...register(`${titlePrefix}bedDepositAmount`)}
-          readOnly
+        disabled
           className={inputClass}
         />
         {renderError(`${titlePrefix}bedDepositAmount`)}
@@ -325,7 +327,8 @@ const handleFinalSubmit = () => {
           value={10000}
           {...register(`${titlePrefix}bedRentAmount`)}
           className={inputClass}
-          readOnly
+          disabled = {true}
+          // readOnly
         />
         {renderError(`${titlePrefix}bedRentAmount`)}
       </div>
@@ -350,7 +353,7 @@ const handleFinalSubmit = () => {
           <input
             type="date"
             {...register(`${titlePrefix}revisionDate`)}
-            readOnly
+           disabled
             className={inputClass}
           />
           {renderError(`${titlePrefix}revisionDate`)}
@@ -363,6 +366,7 @@ const handleFinalSubmit = () => {
             type="text"
             {...register(`${titlePrefix}revisionDate`)}
             className={inputClass}
+            disabled
           />
           {renderError(`${titlePrefix}revisionDate`)}
         </div>

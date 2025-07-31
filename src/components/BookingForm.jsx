@@ -26,14 +26,14 @@ const BookingForm = () => {
       .string()
       .matches(/^[0-9]{10}$/, 'Enter valid 10-digit calling number')
       .required('Calling number is required'),
-    fatherName: yup.string().required('Father name is required'),
+    fatherName: yup.string().required('Emergency Contact1 Full Name is required'),
     fatherContact: yup
       .string()
-      .matches(/^[0-9]{10}$/, 'Enter valid 10-digit father contact number'),
-    motherName: yup.string(),
+      .matches(/^[0-9]{10}$/, 'Enter valid 10-digit contact number'),
+    motherName: yup.string().required('Emergency Contact2 Full Name is required'),
     motherContact: yup
       .string()
-      .matches(/^[0-9]{10}$/, 'Enter valid 10-digit mother contact number'),
+      .matches(/^[0-9]{10}$/, 'Enter valid 10-digit contact number'),
 
     // Permanent
     permanent_propertyCode: yup.string().when('$showPermanent', {
@@ -395,13 +395,14 @@ const handleFinalSubmit = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {[
               
-                { name: 'clientName', label: 'Client Full Name' },
-                { name: 'clientWhatsapp', label: 'Client WhatsApp No' },
-                { name: 'clientCalling', label: 'Client Calling No' },
-                { name: 'fatherName', label: 'Father Name' },
-                { name: 'fatherContact', label: 'Father Contact No' },
-                { name: 'motherName', label: 'Mother Name' },
-                { name: 'motherContact', label: 'Mother Contact No' },
+                { name: 'clientName', label: 'Full Name' },
+                { name: 'clientWhatsapp', label: 'WhatsApp No' },
+                { name: 'clientCalling', label: 'Calling No' },
+                { name: 'fatherName', label: 'Emergency Contact1 Full Name' },
+                { name: 'fatherContact', label: 'Emergency Contact1 No' },
+                { name: 'motherName', label: 'Emergency Contact2 Full Name' },
+                { name: 'motherContact', label: 'Emergency Contact2 No' },
+              
               ].map((field) => (
                 <div key={field.name}>
                   <label>{field.label}</label>
@@ -493,7 +494,7 @@ const handleFinalSubmit = () => {
 <div className="flex justify-center">
 
   <section className="bg-orange-50 border border-gray-200 rounded-lg p-6 shadow-sm">
-  <h3 className="text-xl font-semibold mb-4 border-b pb-2">Additional Booking Info</h3>
+  <h3 className="text-xl font-semibold mb-4 border-b pb-2">Send Payment Details ...</h3>
   <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
 
     {/* Date Field with default today */}
@@ -511,20 +512,16 @@ const handleFinalSubmit = () => {
 
     {/* Sales Dropdown */}
     <div>
-      <label>Sales Person Name</label>
+      <label>Sales Person </label>
       <select {...register('sales')} className={inputClass}>
-        <option value="">Select Name</option>
+        <option value="">Select </option>
         <option value="Sandeep P.">Sandeep P.</option>
         {/* Add more options here if needed */}
       </select>
       {renderError('sales')}
     </div>
 
-  </div>
-</section>
-
-</div>
-          <div className="flex justify-center">
+ <div className="flex justify-center">
             <button
               type="submit"
               className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all shadow-md"
@@ -532,6 +529,12 @@ const handleFinalSubmit = () => {
               Submit Booking
             </button>
           </div>
+  </div>
+  
+</section>
+
+</div>
+         
         </form>
       </div>
       <ConfirmationModel

@@ -3,10 +3,7 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import ConfirmationModel from './ConfirmationModel';
-
-// Validation schema with conditional fields
-
-
+import { useAddBooking } from './services';
 
 const BookingForm = () => {
   const [showPermanent, setShowPermanent] = useState(false);
@@ -15,12 +12,11 @@ const BookingForm = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [formPreviewData, setFormPreviewData] = useState(null);
 
+// Validation schema with conditional fields
 
-  console.log("activeTab, ", activeTab)
   const schema = yup.object().shape({
     date: yup.date().required('Date is required'),
     sales: yup.string().required('Sales person is required'),
-    accounts: yup.string().required('Accounts selection is required'),
     clientName: yup.string().required('Client name is required'),
     clientWhatsapp: yup
       .string()
@@ -116,24 +112,6 @@ const BookingForm = () => {
 
   });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   const {
     register,
     handleSubmit,
@@ -201,11 +179,20 @@ const BookingForm = () => {
     setShowConfirmModal(true); // open modal
   };
 
-  const handleFinalSubmit = () => {
-    console.log('Final Form Data:', formPreviewData);
-    setShowConfirmModal(false);
-  };
+ const { mutate: submitBooking, isLoading, isError, isSuccess } = useAddBooking();
 
+const handleFinalSubmit = () => {
+  console.log("Final Form Data:", formPreviewData);
+  submitBooking(formPreviewData, {
+    onSuccess: () => {
+      alert("✅ Data successfully sent to Google Sheet!");
+      setShowConfirmModal(false);
+    },
+    onError: () => {
+      alert("❌ Failed to submit. Try again.");
+    },
+  });
+};
   const inputClass =
     'w-full px-3 py-2 mt-1 border-2 border-orange-500 rounded-md shadow focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400';
 
@@ -407,9 +394,7 @@ const BookingForm = () => {
             <h3 className="text-xl font-semibold mb-4 border-b pb-2">Client Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {[
-                { name: 'date', type: 'date', label: 'Date' },
-                { name: 'sales', type: 'select', label: 'Sales', options: ['Sandeep P.'] },
-                { name: 'accounts', type: 'select', label: 'Accounts', options: ['NA'] },
+              
                 { name: 'clientName', label: 'Client Full Name' },
                 { name: 'clientWhatsapp', label: 'Client WhatsApp No' },
                 { name: 'clientCalling', label: 'Client Calling No' },
@@ -505,6 +490,40 @@ const BookingForm = () => {
             </div>
           )}
 
+<div className="flex justify-center">
+
+  <section className="bg-orange-50 border border-gray-200 rounded-lg p-6 shadow-sm">
+  <h3 className="text-xl font-semibold mb-4 border-b pb-2">Additional Booking Info</h3>
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+
+    {/* Date Field with default today */}
+    <div>
+      <label>Date</label>
+      <input
+        type="date"
+        {...register('date')}
+        readOnly
+        className={inputClass}
+        defaultValue={new Date().toISOString().split('T')[0]}
+      />
+      {renderError('date')}
+    </div>
+
+    {/* Sales Dropdown */}
+    <div>
+      <label>Sales Person Name</label>
+      <select {...register('sales')} className={inputClass}>
+        <option value="">Select Name</option>
+        <option value="Sandeep P.">Sandeep P.</option>
+        {/* Add more options here if needed */}
+      </select>
+      {renderError('sales')}
+    </div>
+
+  </div>
+</section>
+
+</div>
           <div className="flex justify-center">
             <button
               type="submit"

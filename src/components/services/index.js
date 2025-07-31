@@ -1,18 +1,18 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
 
 const apiClient = axios.create({
-    baseURL: "https://fakestoreapi.com",
+  baseURL: "http://localhost:3000", // make sure your Express server runs here
 });
 
-const getProduct = async () => {
-    const result = await apiClient.get("/products");
-    return result.data;
+// POST request to send booking data
+const addBooking = async (data) => {
+  const response = await apiClient.post("/add-row", data);
+  return response.data;
 };
 
-export const useProductData = () => {
-    return useQuery({
-        queryKey: ["product"],
-        queryFn: getProduct,
-    });
+export const useAddBooking = () => {
+  return useMutation({
+    mutationFn: addBooking,
+  });   
 };

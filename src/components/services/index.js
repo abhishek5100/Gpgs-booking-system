@@ -2,7 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
 const apiClient = axios.create({
-  baseURL: "https://gpgs-booking-system-services.vercel.app/api", // make sure your Express server runs here
+  baseURL: "http://localhost:3000", // make sure your Express server runs here
 });
 
 // POST request to send booking data
@@ -47,3 +47,19 @@ export const usePropertySheetData = (sheetId, enabled) => {
     enabled: !!sheetId && enabled, // Only fetch when sheetId is available
   });
 };
+
+
+
+const fetchEmployeeDetailsData = async () => {
+  const response = await apiClient.get("/Employees-details");
+  return response.data;
+};
+
+// React Query hook to fetch property data
+export const useEmployeeDetails = () => {
+  return useQuery({
+    queryKey: ["EmployeeDetails"],
+    queryFn: fetchEmployeeDetailsData,
+  });
+};
+

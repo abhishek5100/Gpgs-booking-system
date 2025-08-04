@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import ConfirmationModel from './ConfirmationModel';
-import { useAddBooking, usePropertyData, usePropertySheetData } from './services';
+import { useAddBooking, useEmployeeDetails, usePropertyData, usePropertySheetData } from './services';
 
 const BookingForm = () => {
   const [showPermanent, setShowPermanent] = useState(false);
@@ -148,28 +148,25 @@ const watchEndDate = watch(`${activeTab}_bedRentEndDate`);
 const watchMonthlyRent = watch(`${activeTab}_bedMonthlyRent`);
 
 React.useEffect(() => {
-  // Only calculate if all fields are valid
-  if (watchStartDate && watchEndDate && watchMonthlyRent) {
+  if (watchStartDate && watchMonthlyRent) {
     const start = new Date(watchStartDate);
-    const end = new Date(watchEndDate);
 
-    if (!isNaN(start) && !isNaN(end) && end >= start) {
-      const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1; 
-      console.log("days" , days)// Inclusive
+    if (!isNaN(start)) {
+      // Get the last date of the same month
+      const end = new Date(start.getFullYear(), start.getMonth() + 1, 0); // 0th day of next month = last day of current month
+
+      const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
       const dailyRent = parseFloat(watchMonthlyRent) / 30;
       const totalRent = Math.round(dailyRent * days);
 
-      // Update the rent amount field
       setValue(`${activeTab}_bedRentAmount`, totalRent);
     } else {
-      // Reset if invalid
       setValue(`${activeTab}_bedRentAmount`, "");
     }
   } else {
-    // Reset if fields not ready
     setValue(`${activeTab}_bedRentAmount`, "");
   }
-}, [watchStartDate, watchEndDate, watchMonthlyRent, activeTab, setValue]);
+}, [watchStartDate, watchMonthlyRent, activeTab, setValue]);
 
 
 
@@ -212,8 +209,8 @@ React.useEffect(() => {
   const { mutate: submitBooking, isLoading, isError, isSuccess } = useAddBooking();
   const { data: propertyList } = usePropertyData()
   const { data: singleSheetData } = usePropertySheetData(selectedSheetId);
+  const {data:EmployeeDetails} = useEmployeeDetails()
   const handleFinalSubmit = () => {
-    console.log("Final Form Data:", formPreviewData);
     submitBooking(formPreviewData, {
       onSuccess: () => {
         alert("✅ Data successfully sent to Google Sheet!");
@@ -252,7 +249,7 @@ React.useEffect(() => {
       const rentAmt = matchedRow["MFR"] || "";
 
       setValue(`${titlePrefix}roomAcNonAc`, acNonAc);
-      // setValue(`${titlePrefix}bedRentAmount`, rentAmt);
+      setValue(`${titlePrefix}bedNo`, selectedBedNo);
       setValue(`${titlePrefix}bedMonthlyRent`, rentAmt);
       setValue(`${titlePrefix}bedDepositAmount`, matchedRow["DA"]?.trim() || "");
       setValue(`${titlePrefix}revisionDate`, matchedRow["URHD"]?.trim() || "");
@@ -280,6 +277,9 @@ React.useEffect(() => {
       setActiveTab('temporary');
     }
   };
+
+
+
 
   const PropertyFormSection = ({ titlePrefix }) => (
 

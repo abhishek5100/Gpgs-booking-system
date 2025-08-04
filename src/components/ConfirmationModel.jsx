@@ -101,7 +101,7 @@ Dear ${name},
 
 Thank you for choosing Gopal’s PG Services! Please find below the payment and booking details for your stay.
 
-👤 Client Details
+👤 Client Details 
 • Name: ${name}
 • Mobile Number: ${mobile}
 • WhatsApp: ${whatsapp}

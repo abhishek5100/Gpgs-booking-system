@@ -2,7 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
 const apiClient = axios.create({
-  baseURL: "http://localhost:3000", // make sure your Express server runs here
+  baseURL: "https://gpgs-booking-system.vercel.app/api", // make sure your Express server runs here
 });
 
 // POST request to send booking data

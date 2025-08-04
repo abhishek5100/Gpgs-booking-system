@@ -293,7 +293,7 @@ React.useEffect(() => {
           onChange={(e) => handlePropertyCodeChange(e, titlePrefix)}
         >
           <option value="">Select Property Code</option>
-          {propertyList?.data.map((item, index) => (
+          {propertyList?.data?.map((item, index) => (
             <option key={index} value={[item["PG Main  Sheet ID"], item["Bed Count"]]}>
               {item["Property Code"]}
             </option>

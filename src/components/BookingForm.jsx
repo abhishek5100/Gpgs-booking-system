@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import ConfirmationModel from './ConfirmationModel';
-import { useAddBooking } from './services';
+import { useAddBooking, usePropertyData, usePropertySheetData } from './services';
 
 const BookingForm = () => {
   const [showPermanent, setShowPermanent] = useState(false);
@@ -11,8 +11,9 @@ const BookingForm = () => {
   const [activeTab, setActiveTab] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [formPreviewData, setFormPreviewData] = useState(null);
+  const [selectedSheetId, setSelctedSheetId] = useState(null)
 
-// Validation schema with conditional fields
+  // Validation schema with conditional fields
 
   const schema = yup.object().shape({
     date: yup.date().required('Date is required'),
@@ -46,11 +47,11 @@ const BookingForm = () => {
       then: schema => schema.required('Bed number is required'),
       otherwise: schema => schema,
     }),
-    permanent_roomNo: yup.string().when('$showPermanent', {
-      is: true,
-      then: schema => schema.required('Room number is required'),
-      otherwise: schema => schema,
-    }),
+    // permanent_roomNo: yup.string().when('$showPermanent', {
+    //   is: true,
+    //   then: schema => schema.required('Room number is required'),
+    //   otherwise: schema => schema,
+    // }),
     permanent_bedRentStartDate: yup.date().when('$showPermanent', {
       is: true,
       then: schema => schema.required('Rent start date is required'),
@@ -126,23 +127,52 @@ const BookingForm = () => {
 
   const handlePropertyCodeChange = (e, titlePrefix) => {
     const value = e.target.value;
-    setValue(`${titlePrefix}propertyCode`, value);
+    setSelctedSheetId(value)
 
-    // Example logic for setting dependent fields
-    if (value === 'RKBCJK@#@!@#123') {
-      setValue(`${titlePrefix}roomAcNonAc`, 'AC');
-      setValue(`${titlePrefix}bedMonthlyRent`, 12000);
-      setValue(`${titlePrefix}bedDepositAmount`, 5000);
-      setValue(`${titlePrefix}revisionDate`, '2025-12-01');
-    } else {
-      // reset or handle other values
-      setValue(`${titlePrefix}roomAcNonAc`, '');
-      setValue(`${titlePrefix}bedMonthlyRent`, 0);
-      setValue(`${titlePrefix}bedDepositAmount`, 0);
-      setValue(`${titlePrefix}revisionDate`, '');
-    }
+    setValue(`${titlePrefix}propertyCode`, value);
+    setValue(`${titlePrefix}roomAcNonAc`, "");
+    setValue(`${titlePrefix}BedNo`, "select Bed No");
+    setValue(`${titlePrefix}bedRentAmount`, "");
+    setValue(`${titlePrefix}roomNo`, "");
+    setValue(`${titlePrefix}roomAcNonAc`, "");
+    setValue(`${titlePrefix}bedMonthlyRent`, "");
+    setValue(`${titlePrefix}bedDepositAmount`, "");
+    setValue(`${titlePrefix}revisionDate`, "");
+    setValue(`${titlePrefix}revisionAmount`, "");
+    setValue(`${titlePrefix}roomNo`, "");
   };
-  console.log(errors)
+
+// === Auto-calculate Rent Amount Based on Dates and Monthly Rent ===
+const watchStartDate = watch(`${activeTab}_bedRentStartDate`);
+const watchEndDate = watch(`${activeTab}_bedRentEndDate`);
+const watchMonthlyRent = watch(`${activeTab}_bedMonthlyRent`);
+
+React.useEffect(() => {
+  // Only calculate if all fields are valid
+  if (watchStartDate && watchEndDate && watchMonthlyRent) {
+    const start = new Date(watchStartDate);
+    const end = new Date(watchEndDate);
+
+    if (!isNaN(start) && !isNaN(end) && end >= start) {
+      const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1; 
+      console.log("days" , days)// Inclusive
+      const dailyRent = parseFloat(watchMonthlyRent) / 30;
+      const totalRent = Math.round(dailyRent * days);
+
+      // Update the rent amount field
+      setValue(`${activeTab}_bedRentAmount`, totalRent);
+    } else {
+      // Reset if invalid
+      setValue(`${activeTab}_bedRentAmount`, "");
+    }
+  } else {
+    // Reset if fields not ready
+    setValue(`${activeTab}_bedRentAmount`, "");
+  }
+}, [watchStartDate, watchEndDate, watchMonthlyRent, activeTab, setValue]);
+
+
+
 
 
   const onSubmit = (data) => {
@@ -179,20 +209,21 @@ const BookingForm = () => {
     setShowConfirmModal(true); // open modal
   };
 
- const { mutate: submitBooking, isLoading, isError, isSuccess } = useAddBooking();
-
-const handleFinalSubmit = () => {
-  console.log("Final Form Data:", formPreviewData);
-  submitBooking(formPreviewData, {
-    onSuccess: () => {
-      alert("✅ Data successfully sent to Google Sheet!");
-      setShowConfirmModal(false);
-    },
-    onError: () => {
-      alert("❌ Failed to submit. Try again.");
-    },
-  });
-};
+  const { mutate: submitBooking, isLoading, isError, isSuccess } = useAddBooking();
+  const { data: propertyList } = usePropertyData()
+  const { data: singleSheetData } = usePropertySheetData(selectedSheetId);
+  const handleFinalSubmit = () => {
+    console.log("Final Form Data:", formPreviewData);
+    submitBooking(formPreviewData, {
+      onSuccess: () => {
+        alert("✅ Data successfully sent to Google Sheet!");
+        setShowConfirmModal(false);
+      },
+      onError: () => {
+        alert("❌ Failed to submit. Try again.");
+      },
+    });
+  };
   const inputClass =
     'w-full px-3 py-2 mt-1 border-2 border-orange-500 rounded-md shadow focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400';
 
@@ -206,6 +237,37 @@ const handleFinalSubmit = () => {
       else setActiveTab('');
     } else if (checked && !activeTab) {
       setActiveTab('permanent');
+    }
+  };
+
+
+
+  const handleBedNoChange = (e, titlePrefix) => {
+    const selectedBedNo = e.target.value;
+    const matchedRow = singleSheetData?.data?.find(
+      (row) => row["BedNo"]?.trim() === selectedBedNo
+    );
+    if (matchedRow) {
+      const acNonAc = matchedRow["ACRoom"]?.trim() || "";
+      const rentAmt = matchedRow["MFR"] || "";
+
+      setValue(`${titlePrefix}roomAcNonAc`, acNonAc);
+      // setValue(`${titlePrefix}bedRentAmount`, rentAmt);
+      setValue(`${titlePrefix}bedMonthlyRent`, rentAmt);
+      setValue(`${titlePrefix}bedDepositAmount`, matchedRow["DA"]?.trim() || "");
+      setValue(`${titlePrefix}revisionDate`, matchedRow["URHD"]?.trim() || "");
+      setValue(`${titlePrefix}revisionAmount`, matchedRow["URHA"]?.trim() || "");
+      setValue(`${titlePrefix}roomNo`, matchedRow["RoomNo"]?.trim() || "");
+    } else {
+      setValue(`${titlePrefix}roomAcNonAc`, "");
+      setValue(`${titlePrefix}bedRentAmount`, "");
+      setValue(`${titlePrefix}roomNo`, "");
+      setValue(`${titlePrefix}roomAcNonAc`, "");
+      setValue(`${titlePrefix}bedMonthlyRent`, "");
+      setValue(`${titlePrefix}bedDepositAmount`, "");
+      setValue(`${titlePrefix}revisionDate`, "");
+      setValue(`${titlePrefix}revisionAmount`, "");
+      setValue(`${titlePrefix}roomNo`, "");
     }
   };
 
@@ -224,49 +286,64 @@ const handleFinalSubmit = () => {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
       {/* Permanent Property Code */}
       <div>
-        <label>Property Code</label>
+        <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Property Code</label>
         <select
           {...register(`${titlePrefix}propertyCode`)}
           className={inputClass}
           onChange={(e) => handlePropertyCodeChange(e, titlePrefix)}
         >
           <option value="">Select Property Code</option>
-          <option value="RKBCJK@#@!@#123">RKBCJK@#@!@#123</option>
+          {propertyList?.data.map((item, index) => (
+            <option key={index} value={[item["PG Main  Sheet ID"], item["Bed Count"]]}>
+              {item["Property Code"]}
+            </option>
+          ))}
         </select>
         {renderError(`${titlePrefix}propertyCode`)}
       </div>
 
       {/* P. Bed No */}
       <div>
-        <label>Bed No</label>
-        <select {...register(`${titlePrefix}bedNo`)} className={inputClass}>
-          {/* options filtered based on available beds */}
+        <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Bed No</label>
+        <select {...register(`${titlePrefix}bedNo`)}
+          className={inputClass}
+          onChange={(e) => {
+            handleBedNoChange(e, titlePrefix);
+          }}>
           <option value="">Select Bed No</option>
-          <option value="4">4</option>
+          {singleSheetData?.data?.map((ele, index) => {
+            return (
+              <option key={index} value={ele.BedNo}>
+                {ele.BedNo}
+              </option>
+
+            );
+          })}
         </select>
+
         {renderError(`${titlePrefix}bedNo`)}
       </div>
 
       {/* P. Room No */}
       <div>
-        <label>Room No</label>
+        <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Room No</label>
         <input
-        type='text'
-         {...register(`${titlePrefix}roomNo`)} 
-         disabled
-        className={inputClass}>
-       
+          type='text'
+          {...register(`${titlePrefix}roomNo`)}
+          disabled
+          className={inputClass}>
+
         </input>
         {renderError(`${titlePrefix}roomNo`)}
       </div>
 
       {/* P. Room AC/NonAC */}
       <div>
-        <label> AC / Non AC</label>
+        <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500"> AC / Non AC</label>
         <input
           type="text"
           {...register(`${titlePrefix}roomAcNonAc`)}
-         disabled
+          disabled
           className={inputClass}
         />
         {renderError(`${titlePrefix}roomAcNonAc`)}
@@ -274,10 +351,9 @@ const handleFinalSubmit = () => {
 
       {/* P. Bed Monthly Rent */}
       <div>
-        <label> Monthly Fixed Rent ( ₹ )</label>
+        <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500"> Monthly Fixed Rent ( ₹ )</label>
         <input
           type="number"
-          value={12000}
           {...register(`${titlePrefix}bedMonthlyRent`)}
           disabled
           className={inputClass}
@@ -286,20 +362,23 @@ const handleFinalSubmit = () => {
       </div>
 
       {/* P. Bed Deposit Amount */}
-      <div>
-        <label> Deposit Amount ( ₹ )</label>
-        <input
-          type="number"
-          {...register(`${titlePrefix}bedDepositAmount`)}
-        disabled
-          className={inputClass}
-        />
-        {renderError(`${titlePrefix}bedDepositAmount`)}
-      </div>
+      {activeTab !== "temporary" && (
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500"> Deposit Amount ( ₹ )</label>
+          <input
+            type="number"
+            {...register(`${titlePrefix}bedDepositAmount`)}
+            disabled
+            className={inputClass}
+          />
+          {renderError(`${titlePrefix}bedDepositAmount`)}
+        </div>
+      )}
 
       {/* P. Bed Rent Start Date */}
       <div>
-        <label>Client DOJ</label>
+        <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Client DOJ</label>
         <input
           type="date"
           {...register(`${titlePrefix}bedRentStartDate`)}
@@ -309,26 +388,43 @@ const handleFinalSubmit = () => {
       </div>
 
       {/* P. Bed Rent End Date */}
-      <div>
-        <label>Client Last Date</label>
-        <input
-          type="date"
-          {...register(`${titlePrefix}bedRentEndDate`)}
-          className={inputClass}
-        />
-        {renderError(`${titlePrefix}bedRentEndDate`)}
-      </div>
+      {activeTab == "temporary" && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Client Last Date </label>
+          <input
+            type="date"
+            {...register(`${titlePrefix}bedRentEndDate`)}
+            className={inputClass}
+          />
+          {renderError(`${titlePrefix}bedRentEndDate`)}
+        </div>
+      )}
+
+
+      {activeTab == "permanent" && (
+
+        <div>
+          <label>Client Last Date (Optional)</label>
+          <input
+            type="date"
+            {...register(`${titlePrefix}bedRentEndDate`)}
+            className={inputClass}
+          />
+          {renderError(`${titlePrefix}bedRentEndDate`)}
+        </div>
+      )}
+
 
       {/* P. Bed Rent Amount */}
       <div>
-        <label> Rent Amount As Per Client DOJ ( ₹ )</label>
+        <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500"> Rent Amount As Per Client DOJ ( ₹ )</label>
         <input
           type="number"
-          value={10000}
+
           {...register(`${titlePrefix}bedRentAmount`)}
           className={inputClass}
-          disabled = {true}
-          // readOnly
+          disabled={true}
+        // readOnly
         />
         {renderError(`${titlePrefix}bedRentAmount`)}
       </div>
@@ -336,7 +432,7 @@ const handleFinalSubmit = () => {
       {/* Processing Fees Amount */}
       {activeTab !== "temporary" && (
         <div>
-          <label>Processing Fees ( ₹ )</label>
+          <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Processing Fees ( ₹ )</label>
           <input
             type="text"
             {...register(`${titlePrefix}processingFees`)}
@@ -349,37 +445,37 @@ const handleFinalSubmit = () => {
       {/* Rent Revision Date */}
       {activeTab !== "temporary" && (
         <div>
-          <label>Upcoming Rent Hike Date</label>
+          <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Upcoming Rent Hike Date</label>
           <input
-            type="date"
+            type="text"
             {...register(`${titlePrefix}revisionDate`)}
-           disabled
+            disabled
             className={inputClass}
           />
           {renderError(`${titlePrefix}revisionDate`)}
         </div>
       )}
 
-    <div>
-          <label>Upcoming Rent Hike Ammount ( ₹ )</label>
-          <input
-            type="text"
-            {...register(`${titlePrefix}revisionDate`)}
-            className={inputClass}
-            disabled
-          />
-          {renderError(`${titlePrefix}revisionDate`)}
-        </div>
-  <div>
-          <label>Comments</label>
-          <textarea
-            type="text"
-            {...register(`${titlePrefix}Comments`)}
-            
-            className={`${inputClass} max-w-[]`}
-          />
-          {renderError(`${titlePrefix}Comments`)}
-        </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Upcoming Rent Hike Ammount ( ₹ )</label>
+        <input
+          type="text"
+          {...register(`${titlePrefix}revisionAmount`)}
+          className={inputClass}
+          disabled
+        />
+        {renderError(`${titlePrefix}revisionAmount`)}
+      </div>
+      <div>
+        <label>Comments</label>
+        <textarea
+          type="text"
+          {...register(`${titlePrefix}Comments`)}
+
+          className={`${inputClass} max-w-[]`}
+        />
+        {renderError(`${titlePrefix}Comments`)}
+      </div>
 
     </div>
 
@@ -398,7 +494,7 @@ const handleFinalSubmit = () => {
             <h3 className="text-xl font-semibold mb-4 border-b pb-2">Client Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {[
-              
+
                 { name: 'clientName', label: 'Full Name' },
                 { name: 'clientWhatsapp', label: 'WhatsApp No' },
                 { name: 'clientCalling', label: 'Calling No' },
@@ -406,10 +502,11 @@ const handleFinalSubmit = () => {
                 { name: 'fatherContact', label: 'Emergency Contact1 No' },
                 { name: 'motherName', label: 'Emergency Contact2 Full Name' },
                 { name: 'motherContact', label: 'Emergency Contact2 No' },
-              
+
               ].map((field) => (
                 <div key={field.name}>
-                  <label>{field.label}</label>
+                  <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500"
+                  >{field.label}</label>
                   {field.type === 'select' ? (
                     <select {...register(field.name)} className={inputClass}>
                       <option value="">Select {field.label}</option>
@@ -495,50 +592,50 @@ const handleFinalSubmit = () => {
             </div>
           )}
 
-<div className="flex justify-center">
+          <div className="flex justify-center">
 
-  <section className="bg-orange-50 border border-gray-200 rounded-lg p-6 shadow-sm">
-  <h3 className="text-xl font-semibold mb-4 border-b pb-2">Send Payment Details ...</h3>
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <section className="bg-orange-50 border border-gray-200 rounded-lg p-6 shadow-sm">
+              <h3 className="text-xl font-semibold mb-4 border-b pb-2">Send Payment Details ...</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
 
-    {/* Date Field with default today */}
-    <div>
-      <label>Date</label>
-      <input
-        type="date"
-        {...register('date')}
-        readOnly
-        className={inputClass}
-        defaultValue={new Date().toISOString().split('T')[0]}
-      />
-      {renderError('date')}
-    </div>
+                {/* Date Field with default today */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Date</label>
+                  <input
+                    type="date"
+                    {...register('date')}
+                    readOnly
+                    className={inputClass}
+                    defaultValue={new Date().toISOString().split('T')[0]}
+                  />
+                  {renderError('date')}
+                </div>
 
-    {/* Sales Dropdown */}
-    <div>
-      <label>Sales Person </label>
-      <select {...register('sales')} className={inputClass}>
-        <option value="">Select </option>
-        <option value="Sandeep P.">Sandeep P.</option>
-        {/* Add more options here if needed */}
-      </select>
-      {renderError('sales')}
-    </div>
+                {/* Sales Dropdown */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Sales Person </label>
+                  <select {...register('sales')} className={inputClass}>
+                    <option value="">Select </option>
+                    <option value="Sandeep P.">Sandeep P.</option>
+                    {/* Add more options here if needed */}
+                  </select>
+                  {renderError('sales')}
+                </div>
 
- <div className="flex justify-center">
-            <button
-              type="submit"
-              className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all shadow-md"
-            >
-              Submit Booking
-            </button>
+                <div className="flex justify-center">
+                  <button
+                    type="submit"
+                    className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all shadow-md"
+                  >
+                    Submit Booking
+                  </button>
+                </div>
+              </div>
+
+            </section>
+
           </div>
-  </div>
-  
-</section>
 
-</div>
-         
         </form>
       </div>
       <ConfirmationModel

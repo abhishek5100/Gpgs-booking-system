@@ -50,16 +50,16 @@ export const usePropertySheetData = (sheetId, enabled) => {
 
 
 
-const fetchEmployeeDetailsData = async () => {
-  const response = await apiClient.get("/Employees-details");
-  return response.data;
-};
+// const fetchEmployeeDetailsData = async () => {
+//   const response = await apiClient.get("/Employees-details");
+//   return response.data;
+// };
 
-// React Query hook to fetch property data
-export const useEmployeeDetails = () => {
-  return useQuery({
-    queryKey: ["EmployeeDetails"],
-    queryFn: fetchEmployeeDetailsData,
-  });
-};
+// // React Query hook to fetch property data
+// export const useEmployeeDetails = () => {
+//   return useQuery({
+//     queryKey: ["EmployeeDetails"],
+//     queryFn: fetchEmployeeDetailsData,
+//   });
+// };
 

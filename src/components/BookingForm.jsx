@@ -209,7 +209,7 @@ React.useEffect(() => {
   const { mutate: submitBooking, isLoading, isError, isSuccess } = useAddBooking();
   const { data: propertyList } = usePropertyData()
   const { data: singleSheetData } = usePropertySheetData(selectedSheetId);
-  const {data:EmployeeDetails} = useEmployeeDetails()
+  // const {data:EmployeeDetails} = useEmployeeDetails()
   const handleFinalSubmit = () => {
     submitBooking(formPreviewData, {
       onSuccess: () => {
@@ -302,7 +302,7 @@ React.useEffect(() => {
         {renderError(`${titlePrefix}propertyCode`)}
       </div>
 
-      {/* P. Bed No */}
+      {/* P. Bed No */} 
       <div>
         <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Bed No</label>
         <select {...register(`${titlePrefix}bedNo`)}

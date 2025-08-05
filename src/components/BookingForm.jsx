@@ -546,9 +546,13 @@ const resetTabFields = (prefix) => {
   return (
     <div className="max-w-8xl mx-auto bg-gray-100 min-h-screen">
       <div className="bg-white shadow-lg rounded-xl p-6">
-        <h2 className="text-3xl font-bold text-center mb-6 text-gray-800">
-          New Booking Payment Details
-        </h2>
+    <div className="relative w-full text-center mb-8">
+  <h2 className="text-xl md:text-3xl font-bold text-orange-500 tracking-wide">
+    Client Booking & Payment Summary
+  </h2>
+  <div className="mt-2 mx-auto w-24 h-1 bg-orange-500 rounded-full"></div>
+</div>
+
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
           {/* === CLIENT DETAILS === */}
@@ -590,28 +594,44 @@ const resetTabFields = (prefix) => {
                 </div>
               ))}
             </div>
+            
           </section>
 
           {/* === CHECKBOXES === */}
-          <section className="flex gap-6 items-center ml-20">
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                className="accent-orange-500 w-7 h-7" checked={showPermanent}
-                onChange={(e) => handlePermanentCheckbox(e.target.checked)}
-              />
-              <span className='text-[20px]'>Permanent Property Details</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                className="accent-orange-500 w-7 h-7"
-                checked={showTemporary}
-                onChange={(e) => handleTemporaryCheckbox(e.target.checked)}
-              />
-              <span className='text-[20px]'>Temporary Property Details</span>
-            </label>
-          </section>
+<section className="flex flex-col sm:flex-row gap-6 justify-center mt-6">
+  {/* Permanent Property Card */}
+  <label
+    className={`group cursor-pointer flex items-center gap-4 w-full sm:w-80 p-4 border rounded-xl transition-all duration-300 shadow-sm
+      ${showPermanent ? 'bg-orange-100 border-orange-500 ring-2 ring-orange-500' : 'bg-white hover:shadow-lg'}`}
+  >
+    <input
+      type="checkbox"
+      className="accent-orange-500 w-5 h-5"
+      checked={showPermanent}
+      onChange={(e) => handlePermanentCheckbox(e.target.checked)}
+    />
+    <span className="text-lg font-medium text-gray-800 group-hover:text-orange-600">
+      Permanent Property Details
+    </span>
+  </label>
+
+  {/* Temporary Property Card */}
+  <label
+    className={`group cursor-pointer flex items-center gap-4 w-full sm:w-80 p-4 border rounded-xl transition-all duration-300 shadow-sm
+      ${showTemporary ? 'bg-orange-100 border-orange-500 ring-2 ring-orange-500' : 'bg-white hover:shadow-lg'}`}
+  >
+    <input
+      type="checkbox"
+      className="accent-orange-500 w-5 h-5"
+      checked={showTemporary}
+      onChange={(e) => handleTemporaryCheckbox(e.target.checked)}
+    />
+    <span className="text-lg font-medium text-gray-800 group-hover:text-orange-600">
+      Temporary Property Details
+    </span>
+  </label>
+</section>
+
 
           {/* === TABS === */}
           {(showPermanent || showTemporary) && (

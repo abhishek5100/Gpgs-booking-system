@@ -2,7 +2,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
 const apiClient = axios.create({
-  baseURL: "https://gpgs-booking-system-services.vercel.app/api", // make sure your Express server runs here
+  baseURL: "https://gpgs-booking-system-services.vercel.app/api", // for vercel deployement
+  // baseURL: "http://localhost:3000", // for Local Developement
 });
 
 // POST request to send booking data
@@ -16,8 +17,6 @@ export const useAddBooking = () => {
     mutationFn: addBooking,
   });   
 };
-
-
 
 // GET request to fetch property data
 const fetchPropertyData = async () => {
@@ -50,16 +49,16 @@ export const usePropertySheetData = (sheetId, enabled) => {
 
 
 
-// const fetchEmployeeDetailsData = async () => {
-//   const response = await apiClient.get("/Employees-details");
-//   return response.data;
-// };
+const fetchEmployeeDetailsData = async () => {
+  const response = await apiClient.get("/Employees-details");
+  return response.data;
+};
 
-// // React Query hook to fetch property data
-// export const useEmployeeDetails = () => {
-//   return useQuery({
-//     queryKey: ["EmployeeDetails"],
-//     queryFn: fetchEmployeeDetailsData,
-//   });
-// };
+// React Query hook to fetch property data
+export const useEmployeeDetails = () => {
+  return useQuery({
+    queryKey: ["EmployeeDetails"],
+    queryFn: fetchEmployeeDetailsData,
+  });
+};
 

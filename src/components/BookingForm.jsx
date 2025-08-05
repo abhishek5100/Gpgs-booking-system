@@ -4,6 +4,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import ConfirmationModel from './ConfirmationModel';
 import { useAddBooking, useEmployeeDetails, usePropertyData, usePropertySheetData } from './services';
+import LoaderPage from './LoaderPage';
 
 const BookingForm = () => {
   const [showPermanent, setShowPermanent] = useState(false);
@@ -118,11 +119,48 @@ const BookingForm = () => {
     handleSubmit,
     setValue, // <-- Destructure here
     watch,
+    resetField,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
     context: { showPermanent, showTemporary },
   });
+
+
+
+const resetTabFields = (prefix) => {
+  const fieldsToReset = [
+    "propertyCode",
+    "bedNo",
+    "roomNo",
+    "roomAcNonAc",
+    "bedMonthlyRent",
+    "bedDepositAmount",
+    "bedRentStartDate",
+    "bedRentEndDate",
+    "bedRentAmount",
+    "processingFees",
+    "revisionDate",
+    "revisionAmount",
+    "Comments"
+  ];
+
+  fieldsToReset.forEach((field) => {
+    resetField(`${prefix}${field}`);
+  });
+};
+
+
+
+
+
+
+
+
+
+
+
+
 
 
   const handlePropertyCodeChange = (e, titlePrefix) => {
@@ -142,35 +180,30 @@ const BookingForm = () => {
     setValue(`${titlePrefix}roomNo`, "");
   };
 
-// === Auto-calculate Rent Amount Based on Dates and Monthly Rent ===
-const watchStartDate = watch(`${activeTab}_bedRentStartDate`);
-const watchEndDate = watch(`${activeTab}_bedRentEndDate`);
-const watchMonthlyRent = watch(`${activeTab}_bedMonthlyRent`);
+  // === Auto-calculate Rent Amount Based on Dates and Monthly Rent ===
+  const watchStartDate = watch(`${activeTab}_bedRentStartDate`);
+  const watchEndDate = watch(`${activeTab}_bedRentEndDate`);
+  const watchMonthlyRent = watch(`${activeTab}_bedMonthlyRent`);
 
-React.useEffect(() => {
-  if (watchStartDate && watchMonthlyRent) {
-    const start = new Date(watchStartDate);
+  React.useEffect(() => {
+    if (watchStartDate && watchMonthlyRent) {
+      const start = new Date(watchStartDate);
 
-    if (!isNaN(start)) {
-      // Get the last date of the same month
-      const end = new Date(start.getFullYear(), start.getMonth() + 1, 0); // 0th day of next month = last day of current month
+      if (!isNaN(start)) {
+        // Get the last date of the same month
+        const end = new Date(start.getFullYear(), start.getMonth() + 1, 0); // 0th day of next month = last day of current month
+        const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        const dailyRent = parseFloat(watchMonthlyRent) / 30;
+        const totalRent = Math.round(dailyRent * days);
 
-      const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
-      const dailyRent = parseFloat(watchMonthlyRent) / 30;
-      const totalRent = Math.round(dailyRent * days);
-
-      setValue(`${activeTab}_bedRentAmount`, totalRent);
+        setValue(`${activeTab}_bedRentAmount`, totalRent);
+      } else {
+        setValue(`${activeTab}_bedRentAmount`, "");
+      }
     } else {
       setValue(`${activeTab}_bedRentAmount`, "");
     }
-  } else {
-    setValue(`${activeTab}_bedRentAmount`, "");
-  }
-}, [watchStartDate, watchMonthlyRent, activeTab, setValue]);
-
-
-
-
+  }, [watchStartDate, watchMonthlyRent, activeTab, setValue]);
 
   const onSubmit = (data) => {
     // Keep only client + selected tab fields
@@ -206,9 +239,13 @@ React.useEffect(() => {
     setShowConfirmModal(true); // open modal
   };
 
-  const { mutate: submitBooking, isLoading, isError, isSuccess } = useAddBooking();
-  const { data: propertyList } = usePropertyData()
-  const { data: singleSheetData } = usePropertySheetData(selectedSheetId);
+
+
+  const { mutate: submitBooking, isLoading: isBookingLoading} = useAddBooking();
+  const { data: propertyList, isLoading: isPropertyLoading } = usePropertyData();
+  const { data : EmployeeDetails} = useEmployeeDetails()
+  const { data: singleSheetData, isLoading: isPropertySheetData } = usePropertySheetData(selectedSheetId);
+
   // const {data:EmployeeDetails} = useEmployeeDetails()
   const handleFinalSubmit = () => {
     submitBooking(formPreviewData, {
@@ -228,6 +265,9 @@ React.useEffect(() => {
     errors[field] && <p className="text-red-500 text-sm mt-1">{errors[field]?.message}</p>;
 
   const handlePermanentCheckbox = (checked) => {
+    if (!checked) {
+    resetTabFields("permanent_")
+    }
     setShowPermanent(checked);
     if (!checked && activeTab === 'permanent') {
       if (showTemporary) setActiveTab('temporary');
@@ -237,8 +277,18 @@ React.useEffect(() => {
     }
   };
 
-
-
+    const handleTemporaryCheckbox = (checked) => {
+    if (!checked) {
+    resetTabFields("temporary_")
+    }
+    setShowTemporary(checked);
+    if (!checked && activeTab === 'temporary') {
+      if (showPermanent) setActiveTab('permanent');
+      else setActiveTab('');
+    } else if (checked && !activeTab) {
+      setActiveTab('temporary');
+    }
+  };
   const handleBedNoChange = (e, titlePrefix) => {
     const selectedBedNo = e.target.value;
     const matchedRow = singleSheetData?.data?.find(
@@ -268,15 +318,7 @@ React.useEffect(() => {
     }
   };
 
-  const handleTemporaryCheckbox = (checked) => {
-    setShowTemporary(checked);
-    if (!checked && activeTab === 'temporary') {
-      if (showPermanent) setActiveTab('permanent');
-      else setActiveTab('');
-    } else if (checked && !activeTab) {
-      setActiveTab('temporary');
-    }
-  };
+
 
 
 
@@ -302,27 +344,47 @@ React.useEffect(() => {
         {renderError(`${titlePrefix}propertyCode`)}
       </div>
 
-      {/* P. Bed No */} 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Bed No</label>
-        <select {...register(`${titlePrefix}bedNo`)}
-          className={inputClass}
-          onChange={(e) => {
-            handleBedNoChange(e, titlePrefix);
-          }}>
-          <option value="">Select Bed No</option>
-          {singleSheetData?.data?.map((ele, index) => {
-            return (
-              <option key={index} value={ele.BedNo}>
-                {ele.BedNo}
-              </option>
+      {/* P. Bed No */}
 
-            );
-          })}
-        </select>
+  <div className="relative">
+  {/* Label with required asterisk */}
+  <label className="text-sm font-medium text-gray-700 relative after:content-['*'] after:ml-1 after:text-red-500">
+    Bed No
+  </label>
 
-        {renderError(`${titlePrefix}bedNo`)}
-      </div>
+  {/* Loader overlay */}
+  {isPropertySheetData && (
+    <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 z-10 rounded">
+      <LoaderPage />
+    </div>
+  )}
+
+  {/* Select Dropdown */}
+  <select
+    {...register(`${titlePrefix}bedNo`)}
+    className={`${inputClass} ${isPropertySheetData ? 'pointer-events-none opacity-50' : ''}`}
+    onChange={(e) => handleBedNoChange(e, titlePrefix)}
+  >
+    <option value="">Select Bed No</option>
+
+    {!isPropertySheetData &&
+      (singleSheetData?.data?.length === 0 ? (
+        <option value="" disabled className="text-red-500">
+          No beds available
+        </option>
+      ) : (
+        singleSheetData?.data?.map((ele, index) => (
+          <option key={index} value={ele.BedNo}>
+            {ele.BedNo}
+          </option>
+        ))
+      ))}
+  </select>
+
+  {/* Validation error message */}
+  {renderError(`${titlePrefix}bedNo`)}
+</div>
+
 
       {/* P. Room No */}
       <div>
@@ -616,7 +678,11 @@ React.useEffect(() => {
                   <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Sales Person </label>
                   <select {...register('sales')} className={inputClass}>
                     <option value="">Select </option>
-                    <option value="Sandeep P.">Sandeep P.</option>
+                    {EmployeeDetails?.data?.map((ele)=>{
+                      return (     <option value={`${ele.Name} (${ele.ID})`} className='text-orange-400'>{ele.Name}</option>)
+               
+
+                    })}
                     {/* Add more options here if needed */}
                   </select>
                   {renderError('sales')}

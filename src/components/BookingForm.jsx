@@ -53,16 +53,16 @@ const BookingForm = () => {
     //   then: schema => schema.required('Room number is required'),
     //   otherwise: schema => schema,
     // }),
-    permanent_bedRentStartDate: yup.date().when('$showPermanent', {
+    permanent_bedRentStartDate: yup.string().when('$showPermanent', {
       is: true,
       then: schema => schema.required('Rent start date is required'),
       otherwise: schema => schema,
     }),
-    permanent_bedRentEndDate: yup.date().when('$showPermanent', {
-      is: true,
-      then: schema => schema.required('Rent end date is required'),
-      otherwise: schema => schema,
-    }),
+    // permanent_bedRentEndDate: yup.date().when('$showPermanent', {
+    //   is: true,
+    //   then: schema => schema.required('Rent end date is required'),
+    //   otherwise: schema => schema,
+    // }),
     permanent_bedRentAmount: yup.number().when('$showPermanent', {
       is: true,
       then: schema => schema.required('Rent amount is required'),
@@ -548,9 +548,8 @@ const resetTabFields = (prefix) => {
       <div className="bg-white shadow-lg rounded-xl p-6">
     <div className="relative w-full text-center mb-8">
   <h2 className="text-xl md:text-3xl font-bold text-orange-500 tracking-wide">
-    Client Booking & Payment Summary
+    New Booking & Payment Details
   </h2>
-  <div className="mt-2 mx-auto w-24 h-1 bg-orange-500 rounded-full"></div>
 </div>
 
 
@@ -598,7 +597,7 @@ const resetTabFields = (prefix) => {
           </section>
 
           {/* === CHECKBOXES === */}
-<section className="flex flex-col sm:flex-row gap-6 justify-center mt-6">
+<div className="flex flex-col sm:flex-row gap-6 justify-center ">
   {/* Permanent Property Card */}
   <label
     className={`group cursor-pointer flex items-center gap-4 w-full sm:w-80 p-4 border rounded-xl transition-all duration-300 shadow-sm
@@ -630,7 +629,7 @@ const resetTabFields = (prefix) => {
       Temporary Property Details
     </span>
   </label>
-</section>
+</div>
 
 
           {/* === TABS === */}
@@ -640,7 +639,7 @@ const resetTabFields = (prefix) => {
                 {showPermanent && (
                   <button
                     type="button"
-                    className={`px-4  text-[20px] py-2 ${activeTab === 'permanent' ? 'bg-orange-500 text-white rounded-t-lg' : ''
+                    className={`px-4 text-[10px] md:text-[20px] py-2 ${activeTab === 'permanent' ? 'bg-orange-500 text-white rounded-t-lg' : ''
                       }`}
                     onClick={() => setActiveTab('permanent')}
                   >

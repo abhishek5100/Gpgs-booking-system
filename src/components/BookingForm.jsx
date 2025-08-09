@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
+import Select from "react-select";
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import ConfirmationModel from './ConfirmationModel';
 import { useAddBooking, useEmployeeDetails, usePropertyData, usePropertySheetData } from './services';
 import LoaderPage from './LoaderPage';
+
 
 const BookingForm = () => {
   const [showPermanent, setShowPermanent] = useState(false);
@@ -13,6 +15,7 @@ const BookingForm = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [formPreviewData, setFormPreviewData] = useState(null);
   const [selectedSheetId, setSelctedSheetId] = useState(null)
+  const [selectedBedNumber, setSelectedBedNumber] = useState(null)
 
   // Validation schema with conditional fields
 
@@ -120,6 +123,7 @@ const BookingForm = () => {
     setValue, // <-- Destructure here
     watch,
     resetField,
+    control,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
@@ -128,27 +132,27 @@ const BookingForm = () => {
 
 
 
-const resetTabFields = (prefix) => {
-  const fieldsToReset = [
-    "propertyCode",
-    "bedNo",
-    "roomNo",
-    "roomAcNonAc",
-    "bedMonthlyRent",
-    "bedDepositAmount",
-    "bedRentStartDate",
-    "bedRentEndDate",
-    "bedRentAmount",
-    "processingFees",
-    "revisionDate",
-    "revisionAmount",
-    "Comments"
-  ];
+  const resetTabFields = (prefix) => {
+    const fieldsToReset = [
+      "propertyCode",
+      "bedNo",
+      "roomNo",
+      "roomAcNonAc",
+      "bedMonthlyRent",
+      "bedDepositAmount",
+      "bedRentStartDate",
+      "bedRentEndDate",
+      "bedRentAmount",
+      "processingFees",
+      "revisionDate",
+      "revisionAmount",
+      "Comments"
+    ];
 
-  fieldsToReset.forEach((field) => {
-    resetField(`${prefix}${field}`);
-  });
-};
+    fieldsToReset.forEach((field) => {
+      resetField(`${prefix}${field}`);
+    });
+  };
 
 
 
@@ -169,7 +173,7 @@ const resetTabFields = (prefix) => {
 
     setValue(`${titlePrefix}propertyCode`, value);
     setValue(`${titlePrefix}roomAcNonAc`, "");
-    setValue(`${titlePrefix}BedNo`, "select Bed No");
+    setValue(`${titlePrefix}BedNo`, "");
     setValue(`${titlePrefix}bedRentAmount`, "");
     setValue(`${titlePrefix}roomNo`, "");
     setValue(`${titlePrefix}roomAcNonAc`, "");
@@ -180,21 +184,31 @@ const resetTabFields = (prefix) => {
     setValue(`${titlePrefix}roomNo`, "");
   };
 
-  // === Auto-calculate Rent Amount Based on Dates and Monthly Rent ===
-  const watchStartDate = watch(`${activeTab}_bedRentStartDate`);
-  const watchEndDate = watch(`${activeTab}_bedRentEndDate`);
+  // === Auto-calculate Rent Amount ===
+  const watchStartDate = watch(`${activeTab}_bedRentStartDate`); // Client DOJ
+  const watchEndDate = watch(`${activeTab}_bedRentEndDate`);     // Client Last Date
   const watchMonthlyRent = watch(`${activeTab}_bedMonthlyRent`);
 
   React.useEffect(() => {
     if (watchStartDate && watchMonthlyRent) {
       const start = new Date(watchStartDate);
+      const end = watchEndDate ? new Date(watchEndDate) : null;
 
       if (!isNaN(start)) {
-        // Get the last date of the same month
-        const end = new Date(start.getFullYear(), start.getMonth() + 1, 0); // 0th day of next month = last day of current month
-        const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
         const dailyRent = parseFloat(watchMonthlyRent) / 30;
-        const totalRent = Math.round(dailyRent * days);
+
+        let totalRent = 0;
+
+        if (activeTab === "temporary" && end && !isNaN(end)) {
+          // Temporary → Calculate for full range from DOJ to Last Date
+          const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+          totalRent = Math.round(dailyRent * days);
+        } else {
+          // Permanent → Calculate remaining days in start month
+          const monthEnd = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+          const days = Math.ceil((monthEnd - start) / (1000 * 60 * 60 * 24)) + 1;
+          totalRent = Math.round(dailyRent * days);
+        }
 
         setValue(`${activeTab}_bedRentAmount`, totalRent);
       } else {
@@ -203,7 +217,8 @@ const resetTabFields = (prefix) => {
     } else {
       setValue(`${activeTab}_bedRentAmount`, "");
     }
-  }, [watchStartDate, watchMonthlyRent, activeTab, setValue]);
+  }, [watchStartDate, watchEndDate, watchMonthlyRent, activeTab, setValue]);
+
 
   const onSubmit = (data) => {
     // Keep only client + selected tab fields
@@ -241,9 +256,9 @@ const resetTabFields = (prefix) => {
 
 
 
-  const { mutate: submitBooking, isLoading: isBookingLoading} = useAddBooking();
+  const { mutate: submitBooking, isLoading: isBookingLoading } = useAddBooking();
   const { data: propertyList, isLoading: isPropertyLoading } = usePropertyData();
-  const { data : EmployeeDetails} = useEmployeeDetails()
+  const { data: EmployeeDetails } = useEmployeeDetails()
   const { data: singleSheetData, isLoading: isPropertySheetData } = usePropertySheetData(selectedSheetId);
 
   // const {data:EmployeeDetails} = useEmployeeDetails()
@@ -266,7 +281,7 @@ const resetTabFields = (prefix) => {
 
   const handlePermanentCheckbox = (checked) => {
     if (!checked) {
-    resetTabFields("permanent_")
+      resetTabFields("permanent_")
     }
     setShowPermanent(checked);
     if (!checked && activeTab === 'permanent') {
@@ -277,9 +292,9 @@ const resetTabFields = (prefix) => {
     }
   };
 
-    const handleTemporaryCheckbox = (checked) => {
+  const handleTemporaryCheckbox = (checked) => {
     if (!checked) {
-    resetTabFields("temporary_")
+      resetTabFields("temporary_")
     }
     setShowTemporary(checked);
     if (!checked && activeTab === 'temporary') {
@@ -291,6 +306,7 @@ const resetTabFields = (prefix) => {
   };
   const handleBedNoChange = (e, titlePrefix) => {
     const selectedBedNo = e.target.value;
+    setSelectedBedNumber(selectedBedNo)
     const matchedRow = singleSheetData?.data?.find(
       (row) => row["BedNo"]?.trim() === selectedBedNo
     );
@@ -315,6 +331,8 @@ const resetTabFields = (prefix) => {
       setValue(`${titlePrefix}revisionDate`, "");
       setValue(`${titlePrefix}revisionAmount`, "");
       setValue(`${titlePrefix}roomNo`, "");
+      setValue(`${titlePrefix}bedNo`, selectedBedNo);
+
     }
   };
 
@@ -329,61 +347,208 @@ const resetTabFields = (prefix) => {
       {/* Permanent Property Code */}
       <div>
         <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Property Code</label>
-        <select
-          {...register(`${titlePrefix}propertyCode`)}
-          className={inputClass}
-          onChange={(e) => handlePropertyCodeChange(e, titlePrefix)}
-        >
-          <option value="">Select Property Code</option>
-          {propertyList?.data?.map((item, index) => (
-            <option key={index} value={[item["PG Main  Sheet ID"], item["Bed Count"]]}>
-              {item["Property Code"]}
-            </option>
-          ))}
-        </select>
+
+        <Controller
+          name={`${titlePrefix}propertyCode`}
+          control={control}
+          defaultValue={null}
+          render={({ field }) => {
+            const options = propertyList?.data?.map((item) => ({
+              value: `${item["PG Main  Sheet ID"]},${item["Bed Count"]}`,
+              label: item["Property Code"],
+            })) || [];
+
+            return (
+              <Select
+                {...field}
+                value={options?.find(
+                  (opt) =>
+                    opt.value ===
+                    (field.value?.value || field.value) // works for both string & object
+                )}
+                options={options}
+                isClearable
+                isSearchable
+                placeholder="Search & Select Property Code"
+                styles={{
+                  control: (base, state) => ({
+                    ...base,
+                    width: "100%",
+                    paddingTop: "0.25rem",
+                    paddingBottom: "0.10rem",
+                    paddingLeft: "0.75rem",
+                    paddingRight: "0.50rem",
+                    marginTop: "0.30rem",
+                    borderWidth: "2px",
+                    borderStyle: "solid",
+                    borderColor: state.isFocused ? "#fb923c" : "#f97316",
+                    borderRadius: "0.375rem", // rounded-md
+                    boxShadow: state.isFocused
+                      ? "0 0 0 2px rgba(251,146,60,0.5)"
+                      : "0 1px 2px rgba(0,0,0,0.05)",
+                    backgroundColor: "white",
+                    minHeight: "40px",
+                    "&:hover": { borderColor: "#fb923c" },
+                  }),
+                  valueContainer: (base) => ({
+                    ...base,
+                    padding: 0,
+                  }),
+                  placeholder: (base) => ({
+                    ...base,
+                    color: "#000",
+                    marginLeft: 0,
+                  }),
+                  input: (base) => ({
+                    ...base,
+                    margin: 0,
+                    padding: 0,
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    backgroundColor: state.isSelected
+                      ? "#fb923c"
+                      : state.isFocused
+                        ? "rgba(251,146,60,0.1)"
+                        : "white",
+                    color: state.isSelected ? "white" : "#000",
+                    cursor: "pointer",
+                    "&:active": {
+                      backgroundColor: "#fb923c",
+                      color: "white",
+                    },
+                  }),
+                }}
+                onChange={(selectedOption) => {
+                  field.onChange(selectedOption);
+                  handlePropertyCodeChange(
+                    { target: { value: selectedOption?.value || "" } },
+                    titlePrefix
+                  );
+                }}
+              />
+            );
+          }}
+        />
+
+
         {renderError(`${titlePrefix}propertyCode`)}
       </div>
 
       {/* P. Bed No */}
 
-  <div className="relative">
-  {/* Label with required asterisk */}
-  <label className="text-sm font-medium text-gray-700 relative after:content-['*'] after:ml-1 after:text-red-500">
-    Bed No
-  </label>
+      <div className="relative">
+        {/* Label with required asterisk */}
+        <label className="text-sm font-medium text-gray-700 relative after:content-['*'] after:ml-1 after:text-red-500">
+          Bed No
+        </label>
 
-  {/* Loader overlay */}
-  {isPropertySheetData && (
-    <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 z-10 rounded">
-      <LoaderPage />
-    </div>
-  )}
+        {/* Loader overlay */}
+        {isPropertySheetData && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 z-10 rounded">
+            <LoaderPage />
+          </div>
+        )}
 
-  {/* Select Dropdown */}
-  <select
-    {...register(`${titlePrefix}bedNo`)}
-    className={`${inputClass} ${isPropertySheetData ? 'pointer-events-none opacity-50' : ''}`}
-    onChange={(e) => handleBedNoChange(e, titlePrefix)}
-  >
-    <option value="">Select Bed No</option>
 
-    {!isPropertySheetData &&
-      (singleSheetData?.data?.length === 0 ? (
-        <option value="" disabled className="text-red-500">
-          No beds available
-        </option>
-      ) : (
-        singleSheetData?.data?.map((ele, index) => (
-          <option key={index} value={ele.BedNo}>
-            {ele.BedNo}
-          </option>
-        ))
-      ))}
-  </select>
 
-  {/* Validation error message */}
-  {renderError(`${titlePrefix}bedNo`)}
-</div>
+        {/* Select Dropdown */}
+        <Controller
+          name={`${titlePrefix}bedNo`}
+          control={control}
+          defaultValue={
+            selectedBedNumber
+              ? { value: selectedBedNumber, label: selectedBedNumber }
+              : null
+          }
+          render={({ field }) => {
+            // Generate options
+            const options =
+              isPropertySheetData
+                ? []
+                : singleSheetData?.data?.length > 0
+                  ? singleSheetData.data.map((ele) => ({
+                    value: ele.BedNo,
+                    label: ele.BedNo,
+                  }))
+                  : [{ value: "", label: "No beds available", isDisabled: true }];
+
+            return (
+              <Select
+                {...field}
+                value={options?.find((opt) => opt.value === field.value?.value || field.value)}
+                isDisabled={isPropertySheetData}
+                options={options}
+                placeholder="Search & Select Bed No"
+                styles={{
+                  control: (base, state) => ({
+                    ...base,
+                    width: "100%",
+                    paddingTop: "0.25rem",
+                    paddingBottom: "0.10rem",
+                    paddingLeft: "0.75rem",
+                    paddingRight: "0.50rem",
+                    // marginTop: "0.1rem",
+                    borderWidth: "2px",
+                    borderStyle: "solid",
+                    borderColor: state.isFocused ? "#fb923c" : "#f97316",
+                    borderRadius: "0.375rem",
+                    boxShadow: state.isFocused
+                      ? "0 0 0 2px rgba(251,146,60,0.5)"
+                      : "0 1px 2px rgba(0,0,0,0.05)",
+                    backgroundColor: "white",
+                    minHeight: "42px",
+                    "&:hover": { borderColor: "#fb923c" },
+                    opacity: isPropertySheetData ? 0.5 : 1,
+                    pointerEvents: isPropertySheetData ? "none" : "auto",
+                  }),
+                  valueContainer: (base) => ({
+                    ...base,
+                    padding: 0,
+                  }),
+                  placeholder: (base) => ({
+                    ...base,
+                    color: "#000",
+                    marginLeft: 0,
+                  }),
+                  input: (base) => ({
+                    ...base,
+                    margin: 0,
+                    padding: 0,
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    backgroundColor: state.isSelected
+                      ? "#fb923c"
+                      : state.isFocused
+                        ? "rgba(251,146,60,0.1)"
+                        : "white",
+                    color: state.isSelected ? "white" : "#000",
+                    cursor: "pointer",
+                    "&:active": {
+                      backgroundColor: "#fb923c",
+                      color: "white",
+                    },
+                  }),
+                }}
+                onChange={(selectedOption) => {
+                  field.onChange(selectedOption);
+                  handleBedNoChange(
+                    { target: { value: selectedOption?.value || "" } },
+                    titlePrefix
+                  );
+                }}
+              />
+            );
+          }}
+        />
+
+
+
+
+        {/* Validation error message */}
+        {renderError(`${titlePrefix}bedNo`)}
+      </div>
 
 
       {/* P. Room No */}
@@ -546,11 +711,11 @@ const resetTabFields = (prefix) => {
   return (
     <div className="max-w-8xl mx-auto bg-gray-100 min-h-screen">
       <div className="bg-white shadow-lg rounded-xl p-6">
-    <div className="relative w-full text-center mb-8">
-  <h2 className="text-xl md:text-3xl font-bold text-orange-500 tracking-wide">
-    New Booking & Payment Details
-  </h2>
-</div>
+        <div className="relative w-full text-center mb-8">
+          <h2 className="text-xl md:text-3xl font-bold text-orange-500 tracking-wide">
+            New Booking & Payment Details
+          </h2>
+        </div>
 
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
@@ -593,43 +758,43 @@ const resetTabFields = (prefix) => {
                 </div>
               ))}
             </div>
-            
+
           </section>
 
           {/* === CHECKBOXES === */}
-<div className="flex flex-col sm:flex-row gap-6 justify-center ">
-  {/* Permanent Property Card */}
-  <label
-    className={`group cursor-pointer flex items-center gap-4 w-full sm:w-80 p-4 border rounded-xl transition-all duration-300 shadow-sm
+          <div className="flex flex-col sm:flex-row gap-6 justify-center ">
+            {/* Permanent Property Card */}
+            <label
+              className={`group cursor-pointer flex items-center gap-4 w-full sm:w-80 p-4 border rounded-xl transition-all duration-300 shadow-sm
       ${showPermanent ? 'bg-orange-100 border-orange-500 ring-2 ring-orange-500' : 'bg-white hover:shadow-lg'}`}
-  >
-    <input
-      type="checkbox"
-      className="accent-orange-500 w-5 h-5"
-      checked={showPermanent}
-      onChange={(e) => handlePermanentCheckbox(e.target.checked)}
-    />
-    <span className="text-lg font-medium text-gray-800 group-hover:text-orange-600">
-      Permanent Property Details
-    </span>
-  </label>
+            >
+              <input
+                type="checkbox"
+                className="accent-orange-500 w-5 h-5"
+                checked={showPermanent}
+                onChange={(e) => handlePermanentCheckbox(e.target.checked)}
+              />
+              <span className="text-lg font-medium text-gray-800 group-hover:text-orange-600">
+                Permanent Property Details
+              </span>
+            </label>
 
-  {/* Temporary Property Card */}
-  <label
-    className={`group cursor-pointer flex items-center gap-4 w-full sm:w-80 p-4 border rounded-xl transition-all duration-300 shadow-sm
+            {/* Temporary Property Card */}
+            <label
+              className={`group cursor-pointer flex items-center gap-4 w-full sm:w-80 p-4 border rounded-xl transition-all duration-300 shadow-sm
       ${showTemporary ? 'bg-orange-100 border-orange-500 ring-2 ring-orange-500' : 'bg-white hover:shadow-lg'}`}
-  >
-    <input
-      type="checkbox"
-      className="accent-orange-500 w-5 h-5"
-      checked={showTemporary}
-      onChange={(e) => handleTemporaryCheckbox(e.target.checked)}
-    />
-    <span className="text-lg font-medium text-gray-800 group-hover:text-orange-600">
-      Temporary Property Details
-    </span>
-  </label>
-</div>
+            >
+              <input
+                type="checkbox"
+                className="accent-orange-500 w-5 h-5"
+                checked={showTemporary}
+                onChange={(e) => handleTemporaryCheckbox(e.target.checked)}
+              />
+              <span className="text-lg font-medium text-gray-800 group-hover:text-orange-600">
+                Temporary Property Details
+              </span>
+            </label>
+          </div>
 
 
           {/* === TABS === */}
@@ -695,15 +860,64 @@ const resetTabFields = (prefix) => {
                 {/* Sales Dropdown */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Sales Person </label>
-                  <select {...register('sales')} className={inputClass}>
-                    <option value="">Select </option>
-                    {EmployeeDetails?.data?.map((ele)=>{
-                      return (     <option value={`${ele.Name} (${ele.ID})`} className='text-orange-400'>{ele.Name}</option>)
-               
 
-                    })}
-                    {/* Add more options here if needed */}
-                  </select>
+                  <Controller
+                    name="sales"
+                    control={control}
+                    defaultValue={null}
+                    render={({ field }) => {
+                      const options = EmployeeDetails?.data?.map((ele) => ({
+                        value: `${ele.Name} (${ele.ID})`,
+                        label: `${ele.Name} — ID: ${ele.ID}`,
+                      }));
+
+                      return (
+                        <Select
+                          {...field}
+                          options={options}
+                          placeholder="Search & Select Employee"
+                          isClearable
+                          isSearchable
+                          value={options?.find(option => option.value === field.value) || null} // ensures it displays selected value
+                          onChange={(selectedOption) => field.onChange(selectedOption ? selectedOption.value : "")}
+                          className="react-select-container"
+                          classNamePrefix="react-select"
+                          styles={{
+                            control: (base, state) => ({
+                              ...base,
+                              width: "100%",
+                              paddingTop: "0.25rem",
+                              paddingBottom: "0.10rem",
+                              paddingLeft: "0.75rem",
+                              paddingRight: "0.50rem",
+                              marginTop: "0.30rem",
+                              borderWidth: "2px",
+                              borderStyle: "solid",
+                              borderColor: state.isFocused ? "#fb923c" : "#f97316",
+                              borderRadius: "0.375rem", // rounded-md
+                              boxShadow: state.isFocused
+                                ? "0 0 0 2px rgba(251,146,60,0.5)"
+                                : "0 1px 2px rgba(0,0,0,0.05)",
+                              backgroundColor: "white",
+                              minHeight: "40px",
+                              "&:hover": { borderColor: "#fb923c" },
+                            }),
+                            option: (provided, state) => ({
+                              ...provided,
+                              color: state.isSelected ? "white" : "#fb923c",
+                              backgroundColor: state.isSelected ? "#fb923c" : "white",
+                              "&:hover": { backgroundColor: "#fed7aa" }
+                            }),
+                            menu: (provided) => ({
+                              ...provided,
+                              zIndex: 9999
+                            })
+                          }}
+                        />
+                      );
+                    }}
+                  />
+
                   {renderError('sales')}
                 </div>
 

@@ -35,6 +35,7 @@ export const usePropertyData = () => {
 
 
 const fetchPropertySheetData = async (sheetId) => {
+  console.log("sheetId" , sheetId)
   const response = await apiClient.get(`/property-sheet-data?sheetId=${sheetId}`);
   return response.data;
 };

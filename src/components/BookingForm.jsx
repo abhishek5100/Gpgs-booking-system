@@ -221,6 +221,7 @@ const BookingForm = () => {
 
 
   const onSubmit = (data) => {
+    console.log("data", data)
     // Keep only client + selected tab fields
     const filteredData = {
       date: data.date,
@@ -235,21 +236,32 @@ const BookingForm = () => {
       motherContact: data.motherContact,
     };
 
-    if (showPermanent) {
-      Object.keys(data)
-        .filter(key => key.startsWith('permanent_'))
-        .forEach(key => {
-          filteredData[key] = data[key];
-        });
-    }
+   if (showPermanent) {
+  Object.keys(data)
+    .filter(key => key.startsWith('permanent_'))
+    .forEach(key => {
+      if (key === "permanent_propertyCode" && data[key]) {
+        const parts = data[key].split(","); // change delimiter if needed
+        filteredData[key] = parts[2] || ""; // index 2 = third value
+      } else {
+        filteredData[key] = data[key];
+      }
+    });
+}
+   if (showPermanent) {
+  Object.keys(data)
+    .filter(key => key.startsWith('temporary_'))
+    .forEach(key => {
+      if (key === "temporary_propertyCode" && data[key]) {
+        const parts = data[key].split(","); // change delimiter if needed
+        filteredData[key] = parts[2] || ""; // index 2 = third value
+      } else {
+        filteredData[key] = data[key];
+      }
+    });
+}
 
-    if (showTemporary) {
-      Object.keys(data)
-        .filter(key => key.startsWith('temporary_'))
-        .forEach(key => {
-          filteredData[key] = data[key];
-        });
-    }
+  
     setFormPreviewData(filteredData);
     setShowConfirmModal(true); // open modal
   };
@@ -354,7 +366,7 @@ const BookingForm = () => {
           defaultValue={null}
           render={({ field }) => {
             const options = propertyList?.data?.map((item) => ({
-              value: `${item["PG Main  Sheet ID"]},${item["Bed Count"]}`,
+              value: `${item["PG Main  Sheet ID"]},${item["Bed Count"] },${item["Property Code"]}`,
               label: item["Property Code"],
             })) || [];
 

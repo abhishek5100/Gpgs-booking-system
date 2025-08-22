@@ -10,15 +10,14 @@ import LoaderPage from './LoaderPage';
 
 const BookingForm = () => {
   const [showPermanent, setShowPermanent] = useState(false);
-  const [showTemporary, setShowTemporary] = useState(false);
+  const [showtemporary, setShowtemporary] = useState(false);
   const [activeTab, setActiveTab] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [formPreviewData, setFormPreviewData] = useState(null);
   const [selectedSheetId, setSelctedSheetId] = useState(null)
   const [selectedBedNumber, setSelectedBedNumber] = useState(null)
-
+  
   // Validation schema with conditional fields
-
   const schema = yup.object().shape({
     date: yup.date().required('Date is required'),
     sales: yup.string().required('Sales person is required'),
@@ -82,33 +81,33 @@ const BookingForm = () => {
       otherwise: schema => schema,
     }),
 
-    // Temporary
-    temporary_propertyCode: yup.string().when('$showTemporary', {
+    // temporary
+    temporary_propertyCode: yup.string().when('$showtemporary', {
       is: true,
       then: schema => schema.required('Property code is required'),
       otherwise: schema => schema,
     }),
-    temporary_bedNo: yup.string().when('$showTemporary', {
+    temporary_bedNo: yup.string().when('$showtemporary', {
       is: true,
       then: schema => schema.required('Bed number is required'),
       otherwise: schema => schema,
     }),
-    temporary_roomNo: yup.string().when('$showTemporary', {
+    temporary_roomNo: yup.string().when('$showtemporary', {
       is: true,
       then: schema => schema.required('Room number is required'),
       otherwise: schema => schema,
     }),
-    // temporary_bedRentStartDate: yup.date().when('$showTemporary', {
+    // temporary_bedRentStartDate: yup.date().when('$showtemporary', {
     //   is: true,
     //   then: schema => schema.required('Rent start date is required'),
     //   otherwise: schema => schema,
     // }),
-    // temporary_bedRentEndDate: yup.date().when('$showTemporary', {
+    // temporary_bedRentEndDate: yup.date().when('$showtemporary', {
     //   is: true,
     //   then: schema => schema.required('Rent end date is required'),
     //   otherwise: schema => schema,
     // }),
-    temporary_bedRentAmount: yup.number().when('$showTemporary', {
+    temporary_bedRentAmount: yup.number().when('$showtemporary', {
       is: true,
       then: schema => schema.required('Rent amount is required'),
       otherwise: schema => schema,
@@ -127,9 +126,9 @@ const BookingForm = () => {
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
-    context: { showPermanent, showTemporary },
+    context: { showPermanent, showtemporary },
   });
-
+  console.log("watch",watch())
 
 
   const resetTabFields = (prefix) => {
@@ -155,25 +154,13 @@ const BookingForm = () => {
   };
 
 
-
-
-
-
-
-
-
-
-
-
-
-
   const handlePropertyCodeChange = (e, titlePrefix) => {
     const value = e.target.value;
     setSelctedSheetId(value)
 
     setValue(`${titlePrefix}propertyCode`, value);
     setValue(`${titlePrefix}roomAcNonAc`, "");
-    setValue(`${titlePrefix}BedNo`, "");
+    setValue(`${titlePrefix}bedNo`, "");
     setValue(`${titlePrefix}bedRentAmount`, "");
     setValue(`${titlePrefix}roomNo`, "");
     setValue(`${titlePrefix}roomAcNonAc`, "");
@@ -200,7 +187,7 @@ const BookingForm = () => {
         let totalRent = 0;
 
         if (activeTab === "temporary" && end && !isNaN(end)) {
-          // Temporary → Calculate for full range from DOJ to Last Date
+          // temporary → Calculate for full range from DOJ to Last Date
           const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
           totalRent = Math.round(dailyRent * days);
         } else {
@@ -220,51 +207,56 @@ const BookingForm = () => {
   }, [watchStartDate, watchEndDate, watchMonthlyRent, activeTab, setValue]);
 
 
-  const onSubmit = (data) => {
-    console.log("data", data)
-    // Keep only client + selected tab fields
-    const filteredData = {
-      date: data.date,
-      sales: data.sales,
-      accounts: data.accounts,
-      clientName: data.clientName,
-      clientWhatsapp: data.clientWhatsapp,
-      clientCalling: data.clientCalling,
-      fatherName: data.fatherName,
-      fatherContact: data.fatherContact,
-      motherName: data.motherName,
-      motherContact: data.motherContact,
-    };
+const onSubmit = (data) => {
+  console.log("data", data);
 
-   if (showPermanent) {
-  Object.keys(data)
-    .filter(key => key.startsWith('permanent_'))
-    .forEach(key => {
-      if (key === "permanent_propertyCode" && data[key]) {
-        const parts = data[key].split(","); // change delimiter if needed
-        filteredData[key] = parts[2] || ""; // index 2 = third value
-      } else {
-        filteredData[key] = data[key];
-      }
-    });
-}
-   if (showPermanent) {
-  Object.keys(data)
-    .filter(key => key.startsWith('temporary_'))
-    .forEach(key => {
-      if (key === "temporary_propertyCode" && data[key]) {
-        const parts = data[key].split(","); // change delimiter if needed
-        filteredData[key] = parts[2] || ""; // index 2 = third value
-      } else {
-        filteredData[key] = data[key];
-      }
-    });
-}
-
-  
-    setFormPreviewData(filteredData);
-    setShowConfirmModal(true); // open modal
+  // Always include client info
+  const filteredData = {
+    date: data.date,
+    sales: data.sales,
+    accounts: data.accounts,
+    clientName: data.clientName,
+    clientWhatsapp: data.clientWhatsapp,
+    clientCalling: data.clientCalling,
+    fatherName: data.fatherName,
+    fatherContact: data.fatherContact,
+    motherName: data.motherName,
+    motherContact: data.motherContact,
   };
+
+  // Include ONLY active tab fields
+  if (showPermanent) {
+    Object.keys(data)
+      .filter((key) => key.startsWith("permanent_"))
+      .forEach((key) => {
+        if (key === "permanent_propertyCode" && data[key]) {
+          const parts = data[key].split(",");
+          filteredData[key] = parts[2] || ""; 
+        } else {
+          filteredData[key] = data[key];
+        }
+      });
+  }
+
+  if (showtemporary) {
+    Object.keys(data)
+      .filter((key) => key.startsWith("temporary_"))
+      .forEach((key) => {
+        if (key === "temporary_propertyCode" && data[key]) {
+          const parts = data[key].split(",");
+          filteredData[key] = parts[2] || ""; // extract 3rd value
+        } else {
+          filteredData[key] = data[key];
+        }
+      });
+  }
+
+  console.log("filteredData", filteredData);
+
+  setFormPreviewData(filteredData);
+  setShowConfirmModal(true);
+};
+
 
 
 
@@ -274,6 +266,7 @@ const BookingForm = () => {
   const { data: singleSheetData, isLoading: isPropertySheetData } = usePropertySheetData(selectedSheetId);
 
   // const {data:EmployeeDetails} = useEmployeeDetails()
+
   const handleFinalSubmit = () => {
     submitBooking(formPreviewData, {
       onSuccess: () => {
@@ -294,21 +287,22 @@ const BookingForm = () => {
   const handlePermanentCheckbox = (checked) => {
     if (!checked) {
       resetTabFields("permanent_")
+
     }
     setShowPermanent(checked);
     if (!checked && activeTab === 'permanent') {
-      if (showTemporary) setActiveTab('temporary');
+      if (showtemporary) setActiveTab('temporary');
       else setActiveTab('');
     } else if (checked && !activeTab) {
       setActiveTab('permanent');
     }
   };
 
-  const handleTemporaryCheckbox = (checked) => {
+  const handletemporaryCheckbox = (checked) => {
     if (!checked) {
       resetTabFields("temporary_")
     }
-    setShowTemporary(checked);
+    setShowtemporary(checked);
     if (!checked && activeTab === 'temporary') {
       if (showPermanent) setActiveTab('permanent');
       else setActiveTab('');
@@ -348,11 +342,6 @@ const BookingForm = () => {
     }
   };
 
-
-
-
-
-
   const PropertyFormSection = ({ titlePrefix }) => (
 
     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -366,7 +355,7 @@ const BookingForm = () => {
           defaultValue={null}
           render={({ field }) => {
             const options = propertyList?.data?.map((item) => ({
-              value: `${item["PG Main  Sheet ID"]},${item["Bed Count"] },${item["Property Code"]}`,
+              value: `${item["PG Main  Sheet ID"]},${item["Bed Count"]},${item["Property Code"]}`,
               label: item["Property Code"],
             })) || [];
 
@@ -448,11 +437,12 @@ const BookingForm = () => {
       </div>
 
       {/* P. Bed No */}
-
+{activeTab === "permanent" && (
+  
       <div className="relative">
         {/* Label with required asterisk */}
         <label className="text-sm font-medium text-gray-700 relative after:content-['*'] after:ml-1 after:text-red-500">
-          Bed No
+         Bed No
         </label>
 
         {/* Loader overlay */}
@@ -466,7 +456,7 @@ const BookingForm = () => {
 
         {/* Select Dropdown */}
         <Controller
-          name={`${titlePrefix}bedNo`}
+          name={`permanent_bedNo`}
           control={control}
           defaultValue={
             selectedBedNumber
@@ -559,9 +549,124 @@ const BookingForm = () => {
 
 
         {/* Validation error message */}
-        {renderError(`${titlePrefix}bedNo`)}
+        {renderError(`permanent_bedNo`)}
       </div>
+)}
 
+{activeTab === "temporary" && (
+      <div className="relative">
+        {/* Label with required asterisk */}
+        <label className="text-sm font-medium text-gray-700 relative after:content-['*'] after:ml-1 after:text-red-500">
+          Bed No
+        </label>
+
+        {/* Loader overlay */}
+        {isPropertySheetData && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 z-10 rounded">
+            <LoaderPage />
+          </div>
+        )}
+
+
+
+        {/* Select Dropdown */}
+        <Controller
+          name={`temporary_bedNo`}
+          control={control}
+          defaultValue={
+            selectedBedNumber
+              ? { value: selectedBedNumber, label: selectedBedNumber }
+              : null
+          }
+          render={({ field }) => {
+            // Generate options
+            const options =
+              isPropertySheetData
+                ? []
+                : singleSheetData?.data?.length > 0
+                  ? singleSheetData.data.map((ele) => ({
+                    value: ele.BedNo,
+                    label: ele.BedNo,
+                  }))
+                  : [{ value: "", label: "No beds available", isDisabled: true }];
+
+            return (
+              <Select
+                {...field}
+                value={options?.find((opt) => opt.value === field.value?.value || field.value)}
+                isDisabled={isPropertySheetData}
+                options={options}
+                placeholder="Search & Select Bed No"
+                styles={{
+                  control: (base, state) => ({
+                    ...base,
+                    width: "100%",
+                    paddingTop: "0.25rem",
+                    paddingBottom: "0.10rem",
+                    paddingLeft: "0.75rem",
+                    paddingRight: "0.50rem",
+                    // marginTop: "0.1rem",
+                    borderWidth: "2px",
+                    borderStyle: "solid",
+                    borderColor: state.isFocused ? "#fb923c" : "#f97316",
+                    borderRadius: "0.375rem",
+                    boxShadow: state.isFocused
+                      ? "0 0 0 2px rgba(251,146,60,0.5)"
+                      : "0 1px 2px rgba(0,0,0,0.05)",
+                    backgroundColor: "white",
+                    minHeight: "42px",
+                    "&:hover": { borderColor: "#fb923c" },
+                    opacity: isPropertySheetData ? 0.5 : 1,
+                    pointerEvents: isPropertySheetData ? "none" : "auto",
+                  }),
+                  valueContainer: (base) => ({
+                    ...base,
+                    padding: 0,
+                  }),
+                  placeholder: (base) => ({
+                    ...base,
+                    color: "#000",
+                    marginLeft: 0,
+                  }),
+                  input: (base) => ({
+                    ...base,
+                    margin: 0,
+                    padding: 0,
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    backgroundColor: state.isSelected
+                      ? "#fb923c"
+                      : state.isFocused
+                        ? "rgba(251,146,60,0.1)"
+                        : "white",
+                    color: state.isSelected ? "white" : "#000",
+                    cursor: "pointer",
+                    "&:active": {
+                      backgroundColor: "#fb923c",
+                      color: "white",
+                    },
+                  }),
+                }}
+                onChange={(selectedOption) => {
+                  field.onChange(selectedOption);
+                  handleBedNoChange(
+                    { target: { value: selectedOption?.value || "" } },
+                    titlePrefix
+                  );
+                }}
+              />
+            );
+          }}
+        />
+
+
+
+
+        {/* Validation error message */}
+        {renderError(`temporary_bedNo`)}
+      </div>
+)}
 
       {/* P. Room No */}
       <div>
@@ -711,7 +816,7 @@ const BookingForm = () => {
           type="text"
           {...register(`${titlePrefix}Comments`)}
 
-          className={`${inputClass} max-w-[]`}
+          className={`${inputClass}`}
         />
         {renderError(`${titlePrefix}Comments`)}
       </div>
@@ -723,7 +828,7 @@ const BookingForm = () => {
   return (
     <div className="max-w-8xl mx-auto bg-gray-100 min-h-screen">
       <div className="bg-white shadow-lg rounded-xl p-6">
-        <div className="relative w-full text-center mb-8">
+        <div className="relative w-full  text-center mb-8">
           <h2 className="text-xl md:text-3xl font-bold text-orange-500 tracking-wide">
             New Booking & Payment Details
           </h2>
@@ -778,7 +883,7 @@ const BookingForm = () => {
             {/* Permanent Property Card */}
             <label
               className={`group cursor-pointer flex items-center gap-4 w-full sm:w-80 p-4 border rounded-xl transition-all duration-300 shadow-sm
-      ${showPermanent ? 'bg-orange-100 border-orange-500 ring-2 ring-orange-500' : 'bg-white hover:shadow-lg'}`}
+      ${showPermanent ? ' border-orange-500 ring-2 ring-orange-500' : 'bg-white hover:shadow-lg'}`}
             >
               <input
                 type="checkbox"
@@ -791,26 +896,26 @@ const BookingForm = () => {
               </span>
             </label>
 
-            {/* Temporary Property Card */}
+            {/* temporary Property Card */}
             <label
               className={`group cursor-pointer flex items-center gap-4 w-full sm:w-80 p-4 border rounded-xl transition-all duration-300 shadow-sm
-      ${showTemporary ? 'bg-orange-100 border-orange-500 ring-2 ring-orange-500' : 'bg-white hover:shadow-lg'}`}
+      ${showtemporary ? ' border-orange-500 ring-2 ring-orange-500' : 'bg-white hover:shadow-lg'}`}
             >
               <input
                 type="checkbox"
                 className="accent-orange-500 w-5 h-5"
-                checked={showTemporary}
-                onChange={(e) => handleTemporaryCheckbox(e.target.checked)}
+                checked={showtemporary}
+                onChange={(e) => handletemporaryCheckbox(e.target.checked)}
               />
               <span className="text-lg font-medium text-gray-800 group-hover:text-orange-600">
-                Temporary Property Details
+                temporary Property Details
               </span>
             </label>
           </div>
 
 
           {/* === TABS === */}
-          {(showPermanent || showTemporary) && (
+          {(showPermanent || showtemporary) && (
             <div className="bg-orange-50 border border-gray-200 rounded-lg p-6 shadow-sm">
               <div className="mb-4 border-b border-gray-300 flex space-x-4">
                 {showPermanent && (
@@ -823,14 +928,14 @@ const BookingForm = () => {
                     Permanent Property Details
                   </button>
                 )}
-                {showTemporary && (
+                {showtemporary && (
                   <button
                     type="button"
                     className={`px-4 text-[20px] py-2 ${activeTab === 'temporary' ? 'bg-orange-500 text-white rounded-t-lg' : ''
                       }`}
                     onClick={() => setActiveTab('temporary')}
                   >
-                    Temporary Property Details
+                    temporary Property Details
                   </button>
                 )}
               </div>
@@ -838,12 +943,13 @@ const BookingForm = () => {
               {activeTab === 'permanent' && showPermanent && (
                 <>
                   {/* <h3 className="text-xl font-semibold mb-4">Permanent Property Details</h3> */}
+
                   <PropertyFormSection titlePrefix="permanent_" />
                 </>
               )}
-              {activeTab === 'temporary' && showTemporary && (
+              {activeTab === 'temporary' && showtemporary && (
                 <>
-                  {/* <h3 className="text-xl font-semibold mb-4">Temporary Property Details</h3> */}
+                  {/* <h3 className="text-xl font-semibold mb-4">temporary Property Details</h3> */}
                   <PropertyFormSection titlePrefix="temporary_" />
                 </>
               )}
@@ -933,13 +1039,14 @@ const BookingForm = () => {
                   {renderError('sales')}
                 </div>
 
-                <div className="flex justify-center">
+                <div className='flex flex-col  justify-center'>
                   <button
                     type="submit"
-                    className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all shadow-md"
+                    className="px-3 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all shadow-md"
                   >
                     Submit Booking
                   </button>
+
                 </div>
               </div>
 

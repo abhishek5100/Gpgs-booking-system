@@ -2,8 +2,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
 const apiClient = axios.create({
-  baseURL: "https://gpgs-booking-system-services.vercel.app/api", // for vercel deployement
-  // baseURL: "http://localhost:3000", // for Local Developement
+  // baseURL: "https://gpgs-booking-system-services.vercel.app/api", // for vercel deployement
+  baseURL: "http://localhost:3000", // for Local Developement
 });
 
 // POST request to send booking data
@@ -35,10 +35,12 @@ export const usePropertyData = () => {
 
 
 const fetchPropertySheetData = async (sheetId) => {
-  console.log("sheetId" , sheetId)
-  const response = await apiClient.get(`/property-sheet-data?sheetId=${sheetId}`);
-  return response.data;
+  if(sheetId){
+    const response = await apiClient.get(`/property-sheet-data?sheetId=${sheetId}`);
+    return response.data;
+  }
 };
+
 
 export const usePropertySheetData = (sheetId, enabled) => {
   return useQuery({

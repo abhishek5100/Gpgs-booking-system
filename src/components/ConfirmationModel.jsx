@@ -7,8 +7,11 @@ const ConfirmationModel = ({
   showConfirmModal,
   setShowConfirmModal,
   formPreviewData,
+  handleFinalSubmit,
+  // isBookingLoading
 }) => {
   const invoiceRef = useRef();
+  console.log(111, invoiceRef)
 
   const formatCurrency = (amt) =>
     amt ? `₹${parseInt(amt).toLocaleString('en-IN')}` : '-';
@@ -22,6 +25,7 @@ const ConfirmationModel = ({
       console.error('Copy failed:', err);
     }
   };
+
   const downloadPDF = () => {
     const element = invoiceRef.current;
     html2canvas(element, { scale: 2 }).then((canvas) => {
@@ -34,6 +38,7 @@ const ConfirmationModel = ({
       pdf.save(`PG_Payment_${formPreviewData.clientName}.pdf`);
     });
   };
+
 
   const shareOnWhatsApp = () => {
     const msg = `
@@ -50,7 +55,7 @@ Permanent Bed Security Deposit Amount : Rs. ${formPreviewData.permanent_bedDepos
 Processing Fees : Rs. ${formPreviewData.permanent_processingFees}
 Total Amount to be paid : Rs. ${formPreviewData.totalAmount}
 
-Imp. Note : The booking is confirmed only after the booking amount Rs. ${formPreviewData.permanent_bedDepositAmount}  is received by us. The balance amount of Rs. ${formPreviewData.permanent_bedRentAmount - formPreviewData.permanent_bedDepositAmount} is to be paid on the date of joining.
+// Imp. Note : The booking is confirmed only after the booking amount Rs. ${formPreviewData.permanent_bedDepositAmount}  is received by us. The balance amount of Rs. ${formPreviewData.permanent_bedRentAmount - formPreviewData.permanent_bedDepositAmount} is to be paid on the date of joining.
 
 Payment is not refundable if you cancel the booking for any reason, so before making any payment please read the agreement file sent on your whatsapp and if you have any concerns please let us know.
 
@@ -77,10 +82,12 @@ Service Hours : 10AM to 7PM )
         </button>
 
         {/* Invoice Preview */}
-        <div ref={invoiceRef} className="p-6 border border-gray-300 rounded-md bg-white text-gray-800 space-y-4">
+        <div ref={invoiceRef} className="p-6 border  border-gray-300 rounded-md bg-white text-gray-800 space-y-4">
           <h1 className="text-xl font-bold text-center border-b pb-2">Payment Details</h1>
+    <div className='flex justify-between'>
 
-          <section>
+          <section className='max-w-[50%]'>
+            <div>
             <h2 className="font-semibold text-orange-600 mb-1">
               Permanent PG Details
             </h2>
@@ -108,41 +115,46 @@ Service Hours : 10AM to 7PM )
               <strong>Permanent Bed Last Date :</strong>{" "}
               {formPreviewData.permanent_bedRentEndDate || "NA"}
             </p>
+            </div>
           </section>
 
-          <section>
-            <h2 className="font-semibold text-orange-600 mb-1">
-              Payment Details
-            </h2>
-            <p>
-              <strong>Permanent Bed Rent Amount :</strong> ₹
-              {formPreviewData.permanent_bedRentAmount} ( This rent is from{" "}
-              {formPreviewData.permanent_bedRentStartDate} to{" "}
-              {formPreviewData.permanent_bedRentEndDate || "NA"}, also please
-              note the monthly fix rent of this bed is ₹
-              {formPreviewData.permanent_bedMonthlyRent} )
-            </p>
-            <p>
-              <strong>Permanent Bed Security Deposit Amount :</strong> ₹
-              {formPreviewData.permanent_bedDepositAmount}
-            </p>
-            <p>
-              <strong>Processing Fees :</strong> ₹
-              {formPreviewData.permanent_processingFees}
-            </p>
-            <p>
-              <strong>Total Amount to be paid :</strong> ₹
-              {formPreviewData.totalAmount}
-            </p>
+          <section className='max-w-[50%]'>
+            <div>
+              <h2 className="font-semibold text-orange-600 mb-1">
+                Payment Details
+              </h2>
+              <p>
+                <strong>Permanent Bed Rent Amount :</strong> ₹
+                {formPreviewData.permanent_bedRentAmount} ( This rent is from{" "}
+                {formPreviewData.permanent_bedRentStartDate} to{" "}
+                {formPreviewData.permanent_bedRentEndDate || "NA"}, also please
+                {/* note the monthly fix rent of this bed is ₹ */}
+                {formPreviewData.permanent_bedMonthlyRent} )
+              </p>
+              <p>
+                <strong>Permanent Bed Security Deposit Amount :</strong> ₹
+                {formPreviewData.permanent_bedDepositAmount}
+              </p>
+              <p>
+                <strong>Processing Fees :</strong> ₹
+                {formPreviewData.permanent_processingFees}
+              </p>
+              <p>
+                <strong>Total Amount to be paid :</strong> ₹
+                {formPreviewData.totalAmount}
+              </p>
+            </div>
+
           </section>
+    </div>
 
           <section className="text-sm text-gray-600 border-t pt-2">
             <p>
               📌 The booking is confirmed only after the booking amount ₹
               {formPreviewData.permanent_bedDepositAmount} is received by us.
               The balance amount of ₹
-              {formPreviewData.permanent_bedRentAmount -
-                formPreviewData.permanent_bedDepositAmount}{" "}
+              {/* {formPreviewData.permanent_bedRentAmount -
+                formPreviewData.permanent_bedDepositAmount}{" "} */}
               is to be paid on the date of joining.
             </p>
             <p>
@@ -174,12 +186,16 @@ Service Hours : 10AM to 7PM )
           >
             <FileDown size={18} /> Download PDF
           </button>
+
           <button
-            onClick={shareOnWhatsApp}
-            className="flex items-center gap-2 px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded"
+            onClick={() => {
+              shareOnWhatsApp();
+              handleFinalSubmit();
+            }} className="flex items-center gap-2 px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded"
           >
-            <Send size={18} /> Share on WhatsApp
+            <Send size={18} /> Save & Share on WhatsApp
           </button>
+
         </div>
       </div>
     </div>

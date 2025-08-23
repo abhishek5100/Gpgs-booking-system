@@ -35,7 +35,7 @@ const ConfirmationModel = ({
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`PG_Payment_${formPreviewData.clientName}.pdf`);
+      pdf.save(`PG_Payment_${formPreviewData.ClientFullName}.pdf`);
     });
   };
 
@@ -82,7 +82,7 @@ Service Hours : 10AM to 7PM )
         </button>
 
         {/* Invoice Preview */}
-        <div ref={invoiceRef} className=" border  border-gray-300 rounded-md bg-white text-gray-800 space-y-4">
+        <div ref={invoiceRef} className=" border  p-6 border-gray-300 rounded-md bg-white text-gray-800 space-y-4">
           <h1 className="text-xl font-bold text-center border-b pb-2 text-orange-500 ">Payment Details For {formPreviewData.ClientFullName}</h1>
 
           {formPreviewData?.temporary_propertyCode && (
@@ -271,7 +271,7 @@ Service Hours : 10AM to 7PM )
             </section>
           </div>
           <section className="text-sm p-2 text-gray-600 border-t pt-2">
-            {formPreviewData.AskFor === "Booking_Amount" && (
+            {formPreviewData.AskFor === "Booking_Amount " && (
               <p>
                 📌 The booking is confirmed only after the booking amount ₹{" "}
                 {formPreviewData.permanent_bedMonthlyRent} is received by us.
@@ -283,12 +283,15 @@ Service Hours : 10AM to 7PM )
                 is to be paid before possession on the date of joining.
               </p>
             )}
-            {formPreviewData.AskFor === "Full_Amount" && (
+            {formPreviewData.AskFor === "Full_Amount " && (
               <p>
                 📌 The booking is confirmed only after full amount ₹{" "}
-                {Number(formPreviewData.permanent_bedRentAmount) +
-                  Number(formPreviewData.permanent_bedDepositAmount) +
-                  Number(formPreviewData.permanent_processingFees)} is received by us.
+              {
+                    Number(formPreviewData.permanent_bedRentAmount) +
+                    Number(formPreviewData.permanent_bedDepositAmount) +
+                    Number(formPreviewData.permanent_processingFees) +
+                    (formPreviewData.temporary_bedRentAmount ? Number(formPreviewData.temporary_bedRentAmount) : 0)
+                  } is received by us.
               </p>
             )}
             <p>
@@ -302,7 +305,10 @@ Service Hours : 10AM to 7PM )
           <footer className=" text-sm text-center  border-t">
             <p className='text-orange-500 text-bold '>Gopal's Paying Guest Services</p>
             <p>( Customer Care No : 8928191814 | Service Hours : 10AM to 7PM )</p>
+                      <p className='text-[12px]'>Note: This is a system-generated document and does not require a signature.
+</p>
           </footer>
+
 
         </div>
 

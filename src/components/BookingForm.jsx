@@ -77,11 +77,11 @@ const BookingForm = () => {
       then: schema => schema.required('Rent amount is required'),
       otherwise: schema => schema,
     }),
-    permanent_processingFees: yup.number().when('$showPermanent', {
-      is: true,
-      then: schema => schema.required('Processing fee is required').typeError('Must be a number'),
-      otherwise: schema => schema,
-    }),
+    // permanent_processingFees: yup.number().when('$showPermanent', {
+    //   is: true,
+    //   then: schema => schema.required('Processing fee is required').typeError('Must be a number'),
+    //   otherwise: schema => schema,
+    // }),
     permanent_revisionDate: yup.date().when('$showPermanent', {
       is: true,
       then: schema => schema.required('Revision date is required'),
@@ -225,17 +225,19 @@ const BookingForm = () => {
     console.log(22222222, data)
     // Always include client info
     const filteredData = {
-      date: data.date,
-      sales: data.sales,
-      accounts: data.accounts,
-      clientName: data.clientName,
-      clientWhatsapp: data.clientWhatsapp,
-      clientCalling: data.clientCalling,
-      fatherName: data.fatherName,
-      fatherContact: data.fatherContact,
+      Date: data.date,
+      SalesMember: data.sales,
+      Assignee: data.sales,
+      ClientFullName: data.clientName,
+      WhatsAppNo: data.clientWhatsapp,
+      CallingNo: data.clientCalling,
+      EmgyCont1FullName: data.fatherName,
+      EmgyCont1No: data.fatherContact,
       motherName: data.motherName,
-      motherContact: data.motherContact,
-      AskFor: data.AskFor
+      EmgyCont2No: data.motherContact,
+      AskFor: data.AskFor,
+      permanent_processingFees: 500
+
     };
 
     // Include ONLY active tab fields
@@ -332,9 +334,10 @@ const BookingForm = () => {
       setValue(`${titlePrefix}bedNo`, selectedBedNo);
       setValue(`${titlePrefix}bedMonthlyRent`, rentAmt);
       setValue(`${titlePrefix}bedDepositAmount`, matchedRow["DA"]?.trim() || "");
-      setValue(`${titlePrefix}revisionDate`, matchedRow["URHD"]?.trim() || "");
+      setValue(`${titlePrefix}revisionDate`, matchedRow["URHD"] || "");
       setValue(`${titlePrefix}revisionAmount`, matchedRow["URHA"]?.trim() || "");
       setValue(`${titlePrefix}roomNo`, matchedRow["RoomNo"]?.trim() || "");
+      
     } else {
       setValue(`${titlePrefix}roomAcNonAc`, "");
       setValue(`${titlePrefix}bedRentAmount`, "");
@@ -349,6 +352,9 @@ const BookingForm = () => {
 
     }
   };
+
+
+
 
   const PropertyFormSection = ({ titlePrefix }) => (
 
@@ -778,8 +784,9 @@ const BookingForm = () => {
           <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Processing Fees ( ₹ )</label>
           <input
             type="text"
-            {...register(`${titlePrefix}processingFees`)}
+            // {...register(`${titlePrefix}processingFees`)}
             className={inputClass}
+            placeholder=''
           />
           {renderError(`${titlePrefix}processingFees`)}
         </div>
@@ -814,7 +821,7 @@ const BookingForm = () => {
         <label>Comments</label>
         <textarea
           type="text"
-          {...register(`${titlePrefix}Comments`)}
+          // {...register(`${titlePrefix}Comments`)}
 
           className={`${inputClass}`}
         />
@@ -824,6 +831,9 @@ const BookingForm = () => {
     </div>
 
   );
+
+
+
 
   return (
     <div className="max-w-8xl mx-auto bg-gray-100 min-h-screen">

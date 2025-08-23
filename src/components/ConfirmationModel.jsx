@@ -83,7 +83,7 @@ Service Hours : 10AM to 7PM )
 
         {/* Invoice Preview */}
         <div ref={invoiceRef} className=" border  border-gray-300 rounded-md bg-white text-gray-800 space-y-4">
-          <h1 className="text-xl font-bold text-center border-b pb-2 text-orange-500 ">Payment Details For {formPreviewData.clientName}</h1>
+          <h1 className="text-xl font-bold text-center border-b pb-2 text-orange-500 ">Payment Details For {formPreviewData.ClientFullName}</h1>
 
           {formPreviewData?.temporary_propertyCode && (
             <div className='flex justify-between p-2'>
@@ -174,10 +174,6 @@ Service Hours : 10AM to 7PM )
                       </p>
                     )}
 
-
-
-
-
                 </div>
               </section>
             </div>
@@ -235,16 +231,24 @@ Service Hours : 10AM to 7PM )
                   Payment Details
                 </h2> */}
                 <p>
-                  <strong>Permanent Bed Rent Amount :</strong> ₹ {" "}
+                  <strong>Permanent Bed Rent Amount :</strong> ₹{" "}
                   {formPreviewData.permanent_bedRentAmount} ( This rent is from{" "}
-                  {formPreviewData.permanent_bedRentStartDate} to{" "}
-                  {
-                    formPreviewData.permanent_bedRentEndDate || new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0]
-                  }
-                  , also please
-                  note the monthly fix rent of this bed is ₹ {" "}
-                  {formPreviewData.permanent_bedMonthlyRent} )
+                  {new Date(formPreviewData.permanent_bedRentStartDate).toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })} to{" "}
+                  {new Date(
+                    formPreviewData.permanent_bedRentEndDate ||
+                    new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
+                  ).toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })}, also please note the monthly fix rent of this bed is ₹{" "}
+                  {formPreviewData.permanent_bedMonthlyRent})
                 </p>
+
                 <p>
                   <strong>Permanent Bed Deposit Amount :</strong> ₹{" "}
                   {formPreviewData.permanent_bedDepositAmount}
@@ -255,21 +259,17 @@ Service Hours : 10AM to 7PM )
                 </p>
                 <p>
                   <strong>Total Amount To Be paid :</strong> ₹{" "}
-                  {Number(formPreviewData.permanent_bedRentAmount) +
+                  {
+                    Number(formPreviewData.permanent_bedRentAmount) +
                     Number(formPreviewData.permanent_bedDepositAmount) +
-                    Number(formPreviewData.permanent_processingFees) + Number(formPreviewData.temporary_bedRentAmount)}{" "}
-
+                    Number(formPreviewData.permanent_processingFees) +
+                    (formPreviewData.temporary_bedRentAmount ? Number(formPreviewData.temporary_bedRentAmount) : 0)
+                  }
                 </p>
               </div>
 
             </section>
           </div>
-
-
-
-
-
-
           <section className="text-sm p-2 text-gray-600 border-t pt-2">
             {formPreviewData.AskFor === "Booking_Amount" && (
               <p>

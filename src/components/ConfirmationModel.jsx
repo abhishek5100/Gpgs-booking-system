@@ -11,7 +11,7 @@ const ConfirmationModel = ({
   // isBookingLoading
 }) => {
   const invoiceRef = useRef();
-  console.log(111, invoiceRef)
+  console.log(111, formPreviewData)
 
   const formatCurrency = (amt) =>
     amt ? `₹${parseInt(amt).toLocaleString('en-IN')}` : '-';
@@ -82,81 +82,215 @@ Service Hours : 10AM to 7PM )
         </button>
 
         {/* Invoice Preview */}
-        <div ref={invoiceRef} className="p-6 border  border-gray-300 rounded-md bg-white text-gray-800 space-y-4">
-          <h1 className="text-xl font-bold text-center border-b pb-2">Payment Details</h1>
-    <div className='flex justify-between'>
+        <div ref={invoiceRef} className=" border  border-gray-300 rounded-md bg-white text-gray-800 space-y-4">
+          <h1 className="text-xl font-bold text-center border-b pb-2 text-orange-500 ">Payment Details For {formPreviewData.clientName}</h1>
 
-          <section className='max-w-[50%]'>
-            <div>
-            <h2 className="font-semibold text-orange-600 mb-1">
-              Permanent PG Details
-            </h2>
-            <p>
-              <strong>Permanent PG Facility Code :</strong>{" "}
-              {formPreviewData.permanent_propertyCode}
-            </p>
-            <p>
-              <strong>Permanent Room No. :</strong>{" "}
-              {formPreviewData.permanent_roomNo}
-            </p>
-            <p>
-              <strong>Permanent Bed No. :</strong>{" "}
-              {formPreviewData.permanent_bedNo}
-            </p>
-            <p>
-              <strong>Permanent Bed AC / Non AC :</strong>{" "}
-              {formPreviewData.permanent_roomAcNonAc}
-            </p>
-            <p>
-              <strong>Permanent Bed Start Date :</strong>{" "}
-              {formPreviewData.permanent_bedRentStartDate}
-            </p>
-            <p>
-              <strong>Permanent Bed Last Date :</strong>{" "}
-              {formPreviewData.permanent_bedRentEndDate || "NA"}
-            </p>
+          {formPreviewData?.temporary_propertyCode && (
+            <div className='flex justify-between p-2'>
+              <section className='max-w-[50%]'>
+                <div>
+                  {formPreviewData?.temporary_propertyCode && (
+                    <p>
+                      <strong>Temporary PG Facility Code :</strong>{" "}
+                      {formPreviewData.temporary_propertyCode}
+                    </p>
+                  )}
+
+                  {formPreviewData?.temporary_roomNo && (
+                    <p>
+                      <strong>Room No. :</strong> {formPreviewData.temporary_roomNo}
+                    </p>
+                  )}
+
+                  {formPreviewData?.temporary_bedNo && (
+                    <p>
+                      <strong>Bed No. :</strong> {formPreviewData.temporary_bedNo}
+                    </p>
+                  )}
+
+                  {formPreviewData?.temporary_roomAcNonAc && (
+                    <p>
+                      <strong>AC Room :</strong> {formPreviewData.temporary_roomAcNonAc}
+                    </p>
+                  )}
+
+                  {formPreviewData?.temporary_bedRentStartDate && (
+                    <p>
+                      <strong>Start Date :</strong>{" "}
+                      {formPreviewData?.temporary_bedRentStartDate
+                        ? new Date(formPreviewData.temporary_bedRentStartDate).toLocaleDateString("en-GB", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                        : "NA"}
+
+                    </p>
+                  )}
+
+                  {
+                    formPreviewData?.temporary_bedRentEndDate && (
+
+                      <p>
+                        <strong>Last Date :</strong>{" "}
+                        {
+                          formPreviewData?.temporary_bedRentEndDate
+                            ? new Date(formPreviewData.temporary_bedRentEndDate).toLocaleDateString("en-GB", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })
+                            : new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toLocaleDateString("en-GB", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })
+                        }
+                      </p>
+
+                    )
+                  }
+                </div>
+              </section>
+
+              <section className='max-w-[50%]'>
+                <div>
+                  {(formPreviewData?.temporary_bedRentAmount ||
+                    formPreviewData?.temporary_bedRentAmount_bedRentStartDate ||
+                    formPreviewData?.temporary_bedRentEndDate ||
+                    formPreviewData?.temporary_bedMonthlyRent) && (
+                      <p>
+                        <strong>Temporary Bed Rent Amount :</strong> ₹{" "}
+                        {formPreviewData.temporary_bedRentAmount} (This rent is from{" "}
+                        {formPreviewData.permanent_bedRentStartDate} to{" "}
+                        {formPreviewData.temporary_bedRentEndDate ||
+                          new Date(
+                            new Date().getFullYear(),
+                            new Date().getMonth() + 1,
+                            0
+                          ).toISOString().split("T")[0]}
+                        , also please note the monthly fixed rent of this bed is ₹{" "}
+                        {formPreviewData.temporary_bedMonthlyRent})
+                      </p>
+                    )}
+
+
+
+
+
+                </div>
+              </section>
             </div>
-          </section>
+          )}
 
-          <section className='max-w-[50%]'>
-            <div>
-              <h2 className="font-semibold text-orange-600 mb-1">
-                Payment Details
-              </h2>
-              <p>
-                <strong>Permanent Bed Rent Amount :</strong> ₹
-                {formPreviewData.permanent_bedRentAmount} ( This rent is from{" "}
-                {formPreviewData.permanent_bedRentStartDate} to{" "}
-                {formPreviewData.permanent_bedRentEndDate || "NA"}, also please
-                {/* note the monthly fix rent of this bed is ₹ */}
-                {formPreviewData.permanent_bedMonthlyRent} )
-              </p>
-              <p>
-                <strong>Permanent Bed Security Deposit Amount :</strong> ₹
-                {formPreviewData.permanent_bedDepositAmount}
-              </p>
-              <p>
-                <strong>Processing Fees :</strong> ₹
-                {formPreviewData.permanent_processingFees}
-              </p>
-              <p>
-                <strong>Total Amount to be paid :</strong> ₹
-                {formPreviewData.totalAmount}
-              </p>
-            </div>
 
-          </section>
-    </div>
+          {formPreviewData?.temporary_propertyCode && (
+            <hr />
+          )}
 
-          <section className="text-sm text-gray-600 border-t pt-2">
-            <p>
-              📌 The booking is confirmed only after the booking amount ₹
-              {formPreviewData.permanent_bedDepositAmount} is received by us.
-              The balance amount of ₹
-              {/* {formPreviewData.permanent_bedRentAmount -
-                formPreviewData.permanent_bedDepositAmount}{" "} */}
-              is to be paid on the date of joining.
-            </p>
+          <div className='flex justify-between p-2'>
+
+            <section className='max-w-[50%]'>
+              <div>
+                {/* <h2 className="font-semibold text-orange-600 mb-1">
+                  Permanent PG Details
+                </h2> */}
+                <p>
+                  <strong>Permanent PG Facility Code :</strong>{" "}
+                  {formPreviewData.permanent_propertyCode}
+                </p>
+                <p>
+                  <strong> Room No. :</strong>{" "}
+                  {formPreviewData.permanent_roomNo}
+                </p>
+                <p>
+                  <strong> Bed No. :</strong>{" "}
+                  {formPreviewData.permanent_bedNo}
+                </p>
+                <p>
+                  <strong> AC Room : </strong>{" "}
+                  {formPreviewData.permanent_roomAcNonAc}
+                </p>
+                <p>
+                  <strong> Start Date :</strong>{" "}
+                  {formPreviewData?.permanent_bedRentStartDate
+                    ? new Date(formPreviewData.permanent_bedRentStartDate).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })
+                    : "NA"}
+
+                </p>
+                <p>
+                  <strong>  Last Date :</strong>{" "}
+                  {formPreviewData.permanent_bedRentEndDate || "NA"}
+                </p>
+              </div>
+            </section>
+
+            <section className='max-w-[50%]'>
+              <div>
+                {/* <h2 className="font-semibold text-orange-600 mb-1">
+                  Payment Details
+                </h2> */}
+                <p>
+                  <strong>Permanent Bed Rent Amount :</strong> ₹ {" "}
+                  {formPreviewData.permanent_bedRentAmount} ( This rent is from{" "}
+                  {formPreviewData.permanent_bedRentStartDate} to{" "}
+                  {
+                    formPreviewData.permanent_bedRentEndDate || new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0]
+                  }
+                  , also please
+                  note the monthly fix rent of this bed is ₹ {" "}
+                  {formPreviewData.permanent_bedMonthlyRent} )
+                </p>
+                <p>
+                  <strong>Permanent Bed Deposit Amount :</strong> ₹{" "}
+                  {formPreviewData.permanent_bedDepositAmount}
+                </p>
+                <p>
+                  <strong>Processing Fees :</strong> ₹{" "}
+                  {formPreviewData.permanent_processingFees}
+                </p>
+                <p>
+                  <strong>Total Amount To Be paid :</strong> ₹{" "}
+                  {Number(formPreviewData.permanent_bedRentAmount) +
+                    Number(formPreviewData.permanent_bedDepositAmount) +
+                    Number(formPreviewData.permanent_processingFees) + Number(formPreviewData.temporary_bedRentAmount)}{" "}
+
+                </p>
+              </div>
+
+            </section>
+          </div>
+
+
+
+
+
+
+          <section className="text-sm p-2 text-gray-600 border-t pt-2">
+            {formPreviewData.AskFor === "Booking_Amount" && (
+              <p>
+                📌 The booking is confirmed only after the booking amount ₹{" "}
+                {formPreviewData.permanent_bedMonthlyRent} is received by us.
+                The balance amount ₹{" "}
+
+                {Number(formPreviewData.permanent_bedRentAmount) +
+                  Number(formPreviewData.permanent_bedDepositAmount) +
+                  Number(formPreviewData.permanent_processingFees) - formPreviewData.permanent_bedMonthlyRent}{" "}
+                is to be paid before possession on the date of joining.
+              </p>
+            )}
+            {formPreviewData.AskFor === "Full_Amount" && (
+              <p>
+                📌 The booking is confirmed only after full amount ₹{" "}
+                {Number(formPreviewData.permanent_bedRentAmount) +
+                  Number(formPreviewData.permanent_bedDepositAmount) +
+                  Number(formPreviewData.permanent_processingFees)} is received by us.
+              </p>
+            )}
             <p>
               📌 Payment is not refundable if you cancel the booking for any
               reason, so before making any payment please read the agreement
@@ -165,8 +299,8 @@ Service Hours : 10AM to 7PM )
             </p>
           </section>
 
-          <footer className="pt-3 text-sm text-center border-t">
-            <p>Gopal's Paying Guest Services</p>
+          <footer className=" text-sm text-center  border-t">
+            <p className='text-orange-500 text-bold '>Gopal's Paying Guest Services</p>
             <p>( Customer Care No : 8928191814 | Service Hours : 10AM to 7PM )</p>
           </footer>
 
@@ -201,5 +335,4 @@ Service Hours : 10AM to 7PM )
     </div>
   );
 };
-
 export default ConfirmationModel;

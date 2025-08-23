@@ -16,7 +16,14 @@ const BookingForm = () => {
   const [formPreviewData, setFormPreviewData] = useState(null);
   const [selectedSheetId, setSelctedSheetId] = useState(null)
   const [selectedBedNumber, setSelectedBedNumber] = useState(null)
-  
+
+
+  const AskForData = [
+    { label: "Booking Amount", value: "Booking_Amount" },
+    { label: "Full Amount", value: "Full_Amount" }
+  ];
+
+
   // Validation schema with conditional fields
   const schema = yup.object().shape({
     date: yup.date().required('Date is required'),
@@ -128,7 +135,7 @@ const BookingForm = () => {
     resolver: yupResolver(schema),
     context: { showPermanent, showtemporary },
   });
-  console.log("watch",watch())
+  console.log("watch", watch())
 
 
   const resetTabFields = (prefix) => {
@@ -182,7 +189,14 @@ const BookingForm = () => {
       const end = watchEndDate ? new Date(watchEndDate) : null;
 
       if (!isNaN(start)) {
-        const dailyRent = parseFloat(watchMonthlyRent) / 30;
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth();
+
+        // Get number of days in current month
+        const daysInCurrentMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+        // Calculate daily rent
+        const dailyRent = parseFloat(watchMonthlyRent) / daysInCurrentMonth
 
         let totalRent = 0;
 
@@ -207,58 +221,52 @@ const BookingForm = () => {
   }, [watchStartDate, watchEndDate, watchMonthlyRent, activeTab, setValue]);
 
 
-const onSubmit = (data) => {
-  console.log("data", data);
+  const onSubmit = (data) => {
+    console.log(22222222, data)
+    // Always include client info
+    const filteredData = {
+      date: data.date,
+      sales: data.sales,
+      accounts: data.accounts,
+      clientName: data.clientName,
+      clientWhatsapp: data.clientWhatsapp,
+      clientCalling: data.clientCalling,
+      fatherName: data.fatherName,
+      fatherContact: data.fatherContact,
+      motherName: data.motherName,
+      motherContact: data.motherContact,
+      AskFor: data.AskFor
+    };
 
-  // Always include client info
-  const filteredData = {
-    date: data.date,
-    sales: data.sales,
-    accounts: data.accounts,
-    clientName: data.clientName,
-    clientWhatsapp: data.clientWhatsapp,
-    clientCalling: data.clientCalling,
-    fatherName: data.fatherName,
-    fatherContact: data.fatherContact,
-    motherName: data.motherName,
-    motherContact: data.motherContact,
+    // Include ONLY active tab fields
+    if (showPermanent) {
+      Object.keys(data)
+        .filter((key) => key.startsWith("permanent_"))
+        .forEach((key) => {
+          if (key === "permanent_propertyCode" && data[key]) {
+            const parts = data[key].split(",");
+            filteredData[key] = parts[2] || "";
+          } else {
+            filteredData[key] = data[key];
+          }
+        });
+    }
+    if (showtemporary) {
+      Object.keys(data)
+        .filter((key) => key.startsWith("temporary_"))
+        .forEach((key) => {
+          if (key === "temporary_propertyCode" && data[key]) {
+            const parts = data[key].split(",");
+            filteredData[key] = parts[2] || ""; // extract 3rd value
+          } else {
+            filteredData[key] = data[key];
+          }
+        });
+    }
+
+    setFormPreviewData(filteredData);
+    setShowConfirmModal(true);
   };
-
-  // Include ONLY active tab fields
-  if (showPermanent) {
-    Object.keys(data)
-      .filter((key) => key.startsWith("permanent_"))
-      .forEach((key) => {
-        if (key === "permanent_propertyCode" && data[key]) {
-          const parts = data[key].split(",");
-          filteredData[key] = parts[2] || ""; 
-        } else {
-          filteredData[key] = data[key];
-        }
-      });
-  }
-
-  if (showtemporary) {
-    Object.keys(data)
-      .filter((key) => key.startsWith("temporary_"))
-      .forEach((key) => {
-        if (key === "temporary_propertyCode" && data[key]) {
-          const parts = data[key].split(",");
-          filteredData[key] = parts[2] || ""; // extract 3rd value
-        } else {
-          filteredData[key] = data[key];
-        }
-      });
-  }
-
-  console.log("filteredData", filteredData);
-
-  setFormPreviewData(filteredData);
-  setShowConfirmModal(true);
-};
-
-
-
 
   const { mutate: submitBooking, isLoading: isBookingLoading } = useAddBooking();
   const { data: propertyList, isLoading: isPropertyLoading } = usePropertyData();
@@ -437,237 +445,228 @@ const onSubmit = (data) => {
       </div>
 
       {/* P. Bed No */}
-{activeTab === "permanent" && (
-  
-      <div className="relative">
-        {/* Label with required asterisk */}
-        <label className="text-sm font-medium text-gray-700 relative after:content-['*'] after:ml-1 after:text-red-500">
-         Bed No
-        </label>
+      {activeTab === "permanent" && (
 
-        {/* Loader overlay */}
-        {isPropertySheetData && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 z-10 rounded">
-            <LoaderPage />
-          </div>
-        )}
+        <div className="relative">
+          {/* Label with required asterisk */}
+          <label className="text-sm font-medium text-gray-700 relative after:content-['*'] after:ml-1 after:text-red-500">
+            Bed No
+          </label>
 
-
-
-        {/* Select Dropdown */}
-        <Controller
-          name={`permanent_bedNo`}
-          control={control}
-          defaultValue={
-            selectedBedNumber
-              ? { value: selectedBedNumber, label: selectedBedNumber }
-              : null
-          }
-          render={({ field }) => {
-            // Generate options
-            const options =
-              isPropertySheetData
-                ? []
-                : singleSheetData?.data?.length > 0
-                  ? singleSheetData.data.map((ele) => ({
-                    value: ele.BedNo,
-                    label: ele.BedNo,
-                  }))
-                  : [{ value: "", label: "No beds available", isDisabled: true }];
-
-            return (
-              <Select
-                {...field}
-                value={options?.find((opt) => opt.value === field.value?.value || field.value)}
-                isDisabled={isPropertySheetData}
-                options={options}
-                placeholder="Search & Select Bed No"
-                styles={{
-                  control: (base, state) => ({
-                    ...base,
-                    width: "100%",
-                    paddingTop: "0.25rem",
-                    paddingBottom: "0.10rem",
-                    paddingLeft: "0.75rem",
-                    paddingRight: "0.50rem",
-                    // marginTop: "0.1rem",
-                    borderWidth: "2px",
-                    borderStyle: "solid",
-                    borderColor: state.isFocused ? "#fb923c" : "#f97316",
-                    borderRadius: "0.375rem",
-                    boxShadow: state.isFocused
-                      ? "0 0 0 2px rgba(251,146,60,0.5)"
-                      : "0 1px 2px rgba(0,0,0,0.05)",
-                    backgroundColor: "white",
-                    minHeight: "42px",
-                    "&:hover": { borderColor: "#fb923c" },
-                    opacity: isPropertySheetData ? 0.5 : 1,
-                    pointerEvents: isPropertySheetData ? "none" : "auto",
-                  }),
-                  valueContainer: (base) => ({
-                    ...base,
-                    padding: 0,
-                  }),
-                  placeholder: (base) => ({
-                    ...base,
-                    color: "#000",
-                    marginLeft: 0,
-                  }),
-                  input: (base) => ({
-                    ...base,
-                    margin: 0,
-                    padding: 0,
-                  }),
-                  option: (base, state) => ({
-                    ...base,
-                    backgroundColor: state.isSelected
-                      ? "#fb923c"
-                      : state.isFocused
-                        ? "rgba(251,146,60,0.1)"
-                        : "white",
-                    color: state.isSelected ? "white" : "#000",
-                    cursor: "pointer",
-                    "&:active": {
-                      backgroundColor: "#fb923c",
-                      color: "white",
-                    },
-                  }),
-                }}
-                onChange={(selectedOption) => {
-                  field.onChange(selectedOption);
-                  handleBedNoChange(
-                    { target: { value: selectedOption?.value || "" } },
-                    titlePrefix
-                  );
-                }}
-              />
-            );
-          }}
-        />
+          {/* Loader overlay */}
+          {isPropertySheetData && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 z-10 rounded">
+              <LoaderPage />
+            </div>
+          )}
 
 
 
+          {/* Select Dropdown */}
+          <Controller
+            name={`permanent_bedNo`}
+            control={control}
+            defaultValue={
+              selectedBedNumber
+                ? { value: selectedBedNumber, label: selectedBedNumber }
+                : null
+            }
+            render={({ field }) => {
+              // Generate options
+              const options =
+                isPropertySheetData
+                  ? []
+                  : singleSheetData?.data?.length > 0
+                    ? singleSheetData.data.map((ele) => ({
+                      value: ele.BedNo,
+                      label: ele.BedNo,
+                    }))
+                    : [{ value: "", label: "No beds available", isDisabled: true }];
 
-        {/* Validation error message */}
-        {renderError(`permanent_bedNo`)}
-      </div>
-)}
+              return (
+                <Select
+                  {...field}
+                  value={options?.find((opt) => opt.value === field.value?.value || field.value)}
+                  isDisabled={isPropertySheetData}
+                  options={options}
+                  placeholder="Search & Select Bed No"
+                  styles={{
+                    control: (base, state) => ({
+                      ...base,
+                      width: "100%",
+                      paddingTop: "0.25rem",
+                      paddingBottom: "0.10rem",
+                      paddingLeft: "0.75rem",
+                      paddingRight: "0.50rem",
+                      // marginTop: "0.1rem",
+                      borderWidth: "2px",
+                      borderStyle: "solid",
+                      borderColor: state.isFocused ? "#fb923c" : "#f97316",
+                      borderRadius: "0.375rem",
+                      boxShadow: state.isFocused
+                        ? "0 0 0 2px rgba(251,146,60,0.5)"
+                        : "0 1px 2px rgba(0,0,0,0.05)",
+                      backgroundColor: "white",
+                      minHeight: "42px",
+                      "&:hover": { borderColor: "#fb923c" },
+                      opacity: isPropertySheetData ? 0.5 : 1,
+                      pointerEvents: isPropertySheetData ? "none" : "auto",
+                    }),
+                    valueContainer: (base) => ({
+                      ...base,
+                      padding: 0,
+                    }),
+                    placeholder: (base) => ({
+                      ...base,
+                      color: "#000",
+                      marginLeft: 0,
+                    }),
+                    input: (base) => ({
+                      ...base,
+                      margin: 0,
+                      padding: 0,
+                    }),
+                    option: (base, state) => ({
+                      ...base,
+                      backgroundColor: state.isSelected
+                        ? "#fb923c"
+                        : state.isFocused
+                          ? "rgba(251,146,60,0.1)"
+                          : "white",
+                      color: state.isSelected ? "white" : "#000",
+                      cursor: "pointer",
+                      "&:active": {
+                        backgroundColor: "#fb923c",
+                        color: "white",
+                      },
+                    }),
+                  }}
+                  onChange={(selectedOption) => {
+                    field.onChange(selectedOption);
+                    handleBedNoChange(
+                      { target: { value: selectedOption?.value || "" } },
+                      titlePrefix
+                    );
+                  }}
+                />
+              );
+            }}
+          />
 
-{activeTab === "temporary" && (
-      <div className="relative">
-        {/* Label with required asterisk */}
-        <label className="text-sm font-medium text-gray-700 relative after:content-['*'] after:ml-1 after:text-red-500">
-          Bed No
-        </label>
+          {/* Validation error message */}
+          {renderError(`permanent_bedNo`)}
+        </div>
+      )}
+      {activeTab === "temporary" && (
+        <div className="relative">
+          {/* Label with required asterisk */}
+          <label className="text-sm font-medium text-gray-700 relative after:content-['*'] after:ml-1 after:text-red-500">
+            Bed No
+          </label>
 
-        {/* Loader overlay */}
-        {isPropertySheetData && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 z-10 rounded">
-            <LoaderPage />
-          </div>
-        )}
-
-
-
-        {/* Select Dropdown */}
-        <Controller
-          name={`temporary_bedNo`}
-          control={control}
-          defaultValue={
-            selectedBedNumber
-              ? { value: selectedBedNumber, label: selectedBedNumber }
-              : null
-          }
-          render={({ field }) => {
-            // Generate options
-            const options =
-              isPropertySheetData
-                ? []
-                : singleSheetData?.data?.length > 0
-                  ? singleSheetData.data.map((ele) => ({
-                    value: ele.BedNo,
-                    label: ele.BedNo,
-                  }))
-                  : [{ value: "", label: "No beds available", isDisabled: true }];
-
-            return (
-              <Select
-                {...field}
-                value={options?.find((opt) => opt.value === field.value?.value || field.value)}
-                isDisabled={isPropertySheetData}
-                options={options}
-                placeholder="Search & Select Bed No"
-                styles={{
-                  control: (base, state) => ({
-                    ...base,
-                    width: "100%",
-                    paddingTop: "0.25rem",
-                    paddingBottom: "0.10rem",
-                    paddingLeft: "0.75rem",
-                    paddingRight: "0.50rem",
-                    // marginTop: "0.1rem",
-                    borderWidth: "2px",
-                    borderStyle: "solid",
-                    borderColor: state.isFocused ? "#fb923c" : "#f97316",
-                    borderRadius: "0.375rem",
-                    boxShadow: state.isFocused
-                      ? "0 0 0 2px rgba(251,146,60,0.5)"
-                      : "0 1px 2px rgba(0,0,0,0.05)",
-                    backgroundColor: "white",
-                    minHeight: "42px",
-                    "&:hover": { borderColor: "#fb923c" },
-                    opacity: isPropertySheetData ? 0.5 : 1,
-                    pointerEvents: isPropertySheetData ? "none" : "auto",
-                  }),
-                  valueContainer: (base) => ({
-                    ...base,
-                    padding: 0,
-                  }),
-                  placeholder: (base) => ({
-                    ...base,
-                    color: "#000",
-                    marginLeft: 0,
-                  }),
-                  input: (base) => ({
-                    ...base,
-                    margin: 0,
-                    padding: 0,
-                  }),
-                  option: (base, state) => ({
-                    ...base,
-                    backgroundColor: state.isSelected
-                      ? "#fb923c"
-                      : state.isFocused
-                        ? "rgba(251,146,60,0.1)"
-                        : "white",
-                    color: state.isSelected ? "white" : "#000",
-                    cursor: "pointer",
-                    "&:active": {
-                      backgroundColor: "#fb923c",
-                      color: "white",
-                    },
-                  }),
-                }}
-                onChange={(selectedOption) => {
-                  field.onChange(selectedOption);
-                  handleBedNoChange(
-                    { target: { value: selectedOption?.value || "" } },
-                    titlePrefix
-                  );
-                }}
-              />
-            );
-          }}
-        />
+          {/* Loader overlay */}
+          {isPropertySheetData && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50 z-10 rounded">
+              <LoaderPage />
+            </div>
+          )}
 
 
 
+          {/* Select Dropdown */}
+          <Controller
+            name={`temporary_bedNo`}
+            control={control}
+            defaultValue={
+              selectedBedNumber
+                ? { value: selectedBedNumber, label: selectedBedNumber }
+                : null
+            }
+            render={({ field }) => {
+              // Generate options
+              const options =
+                isPropertySheetData
+                  ? []
+                  : singleSheetData?.data?.length > 0
+                    ? singleSheetData.data.map((ele) => ({
+                      value: ele.BedNo,
+                      label: ele.BedNo,
+                    }))
+                    : [{ value: "", label: "No beds available", isDisabled: true }];
 
-        {/* Validation error message */}
-        {renderError(`temporary_bedNo`)}
-      </div>
-)}
-
+              return (
+                <Select
+                  {...field}
+                  value={options?.find((opt) => opt.value === field.value?.value || field.value)}
+                  isDisabled={isPropertySheetData}
+                  options={options}
+                  placeholder="Search & Select Bed No"
+                  styles={{
+                    control: (base, state) => ({
+                      ...base,
+                      width: "100%",
+                      paddingTop: "0.25rem",
+                      paddingBottom: "0.10rem",
+                      paddingLeft: "0.75rem",
+                      paddingRight: "0.50rem",
+                      // marginTop: "0.1rem",
+                      borderWidth: "2px",
+                      borderStyle: "solid",
+                      borderColor: state.isFocused ? "#fb923c" : "#f97316",
+                      borderRadius: "0.375rem",
+                      boxShadow: state.isFocused
+                        ? "0 0 0 2px rgba(251,146,60,0.5)"
+                        : "0 1px 2px rgba(0,0,0,0.05)",
+                      backgroundColor: "white",
+                      minHeight: "42px",
+                      "&:hover": { borderColor: "#fb923c" },
+                      opacity: isPropertySheetData ? 0.5 : 1,
+                      pointerEvents: isPropertySheetData ? "none" : "auto",
+                    }),
+                    valueContainer: (base) => ({
+                      ...base,
+                      padding: 0,
+                    }),
+                    placeholder: (base) => ({
+                      ...base,
+                      color: "#000",
+                      marginLeft: 0,
+                    }),
+                    input: (base) => ({
+                      ...base,
+                      margin: 0,
+                      padding: 0,
+                    }),
+                    option: (base, state) => ({
+                      ...base,
+                      backgroundColor: state.isSelected
+                        ? "#fb923c"
+                        : state.isFocused
+                          ? "rgba(251,146,60,0.1)"
+                          : "white",
+                      color: state.isSelected ? "white" : "#000",
+                      cursor: "pointer",
+                      "&:active": {
+                        backgroundColor: "#fb923c",
+                        color: "white",
+                      },
+                    }),
+                  }}
+                  onChange={(selectedOption) => {
+                    field.onChange(selectedOption);
+                    handleBedNoChange(
+                      { target: { value: selectedOption?.value || "" } },
+                      titlePrefix
+                    );
+                  }}
+                />
+              );
+            }}
+          />
+          {/* Validation error message */}
+          {renderError(`temporary_bedNo`)}
+        </div>
+      )}
       {/* P. Room No */}
       <div>
         <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Room No</label>
@@ -683,7 +682,7 @@ const onSubmit = (data) => {
 
       {/* P. Room AC/NonAC */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500"> AC / Non AC</label>
+        <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500"> AC Room</label>
         <input
           type="text"
           {...register(`${titlePrefix}roomAcNonAc`)}
@@ -799,17 +798,18 @@ const onSubmit = (data) => {
           {renderError(`${titlePrefix}revisionDate`)}
         </div>
       )}
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Upcoming Rent Hike Ammount ( ₹ )</label>
-        <input
-          type="text"
-          {...register(`${titlePrefix}revisionAmount`)}
-          className={inputClass}
-          disabled
-        />
-        {renderError(`${titlePrefix}revisionAmount`)}
-      </div>
+      {activeTab !== "temporary" && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Upcoming Rent Hike Ammount ( ₹ )</label>
+          <input
+            type="text"
+            {...register(`${titlePrefix}revisionAmount`)}
+            className={inputClass}
+            disabled
+          />
+          {renderError(`${titlePrefix}revisionAmount`)}
+        </div>
+      )}
       <div>
         <label>Comments</label>
         <textarea
@@ -837,8 +837,10 @@ const onSubmit = (data) => {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
           {/* === CLIENT DETAILS === */}
-          <section className="bg-orange-50 border border-gray-200 rounded-lg p-6 shadow-sm">
-            <h3 className="text-xl font-semibold mb-4 border-b pb-2">Client Details</h3>
+          <section className="bg-orange-50 border border-gray-200 rounded-lg p-2 shadow-sm">
+
+            <h3 className="text-xl font-semibold mb-4 border-b bg-orange-500 pb-2 text-white px-5 py-2">Client Details</h3>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {[
 
@@ -908,7 +910,7 @@ const onSubmit = (data) => {
                 onChange={(e) => handletemporaryCheckbox(e.target.checked)}
               />
               <span className="text-lg font-medium text-gray-800 group-hover:text-orange-600">
-                temporary Property Details
+                Temporary Property Details
               </span>
             </label>
           </div>
@@ -916,7 +918,7 @@ const onSubmit = (data) => {
 
           {/* === TABS === */}
           {(showPermanent || showtemporary) && (
-            <div className="bg-orange-50 border border-gray-200 rounded-lg p-6 shadow-sm">
+            <div className="bg-orange-50 border border-gray-200 rounded-lg p-2 shadow-sm">
               <div className="mb-4 border-b border-gray-300 flex space-x-4">
                 {showPermanent && (
                   <button
@@ -935,7 +937,7 @@ const onSubmit = (data) => {
                       }`}
                     onClick={() => setActiveTab('temporary')}
                   >
-                    temporary Property Details
+                    Temporary Property Details
                   </button>
                 )}
               </div>
@@ -958,8 +960,8 @@ const onSubmit = (data) => {
 
           <div className="flex justify-center">
 
-            <section className="bg-orange-50 border border-gray-200 rounded-lg p-6 shadow-sm">
-              <h3 className="text-xl font-semibold mb-4 border-b pb-2">Send Payment Details ...</h3>
+            <section className="bg-orange-50 border border-gray-200 rounded-lg p-2 shadow-sm">
+              <h3 className="text-xl font-semibold mb-4 border-b bg-orange-500 text-white px-5 py-2 pb-2">Send Payment Details ...</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
 
                 {/* Date Field with default today */}
@@ -1039,15 +1041,79 @@ const onSubmit = (data) => {
                   {renderError('sales')}
                 </div>
 
-                <div className='flex flex-col  justify-center'>
-                  <button
-                    type="submit"
-                    className="px-3 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all shadow-md"
-                  >
-                    Submit Booking
-                  </button>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Ask For ₹ </label>
 
+                  <Controller
+                    name="AskFor"
+                    control={control}
+                    defaultValue={null}
+                    render={({ field }) => {
+                      const options = AskForData?.map((ele) => ({
+                        value: `${ele.value}`,
+                        label: `${ele.label}`,
+                      }));
+
+                      return (
+                        <Select
+                          {...field}
+                          options={AskForData}
+                          placeholder="Search & Select Ask For"
+                          isClearable
+                          isSearchable
+                          value={options?.find(option => option.value === field.value) || null} // ensures it displays selected value
+                          onChange={(selectedOption) => field.onChange(selectedOption ? selectedOption.value : "")}
+                          className="react-select-container"
+                          classNamePrefix="react-select"
+                          styles={{
+                            control: (base, state) => ({
+                              ...base,
+                              width: "100%",
+                              paddingTop: "0.25rem",
+                              paddingBottom: "0.10rem",
+                              paddingLeft: "0.75rem",
+                              paddingRight: "0.50rem",
+                              marginTop: "0.30rem",
+                              borderWidth: "2px",
+                              borderStyle: "solid",
+                              borderColor: state.isFocused ? "#fb923c" : "#f97316",
+                              borderRadius: "0.375rem", // rounded-md
+                              boxShadow: state.isFocused
+                                ? "0 0 0 2px rgba(251,146,60,0.5)"
+                                : "0 1px 2px rgba(0,0,0,0.05)",
+                              backgroundColor: "white",
+                              minHeight: "40px",
+                              "&:hover": { borderColor: "#fb923c" },
+                            }),
+                            option: (provided, state) => ({
+                              ...provided,
+                              color: state.isSelected ? "white" : "#fb923c",
+                              backgroundColor: state.isSelected ? "#fb923c" : "white",
+                              "&:hover": { backgroundColor: "#fed7aa" }
+                            }),
+                            menu: (provided) => ({
+                              ...provided,
+                              zIndex: 9999
+                            })
+                          }}
+                        />
+                      );
+                    }}
+                  />
+
+                  {renderError('AskFor')}
                 </div>
+
+
+              </div>
+              <div className='flex  mt-5 justify-center'>
+                <button
+                  type="submit"
+                  className="px-5 w-fit py-3 bg-orange-500 text-xl text-white rounded-lg hover:bg-orange-600 transition-all shadow-md"
+                >
+                  Submit Booking
+                </button>
+
               </div>
 
             </section>

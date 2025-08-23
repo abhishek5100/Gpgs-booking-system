@@ -472,11 +472,7 @@ const BookingForm = () => {
           <Controller
             name={`permanent_bedNo`}
             control={control}
-            defaultValue={
-              selectedBedNumber
-                ? { value: selectedBedNumber, label: selectedBedNumber }
-                : null
-            }
+            defaultValue={ null }
             render={({ field }) => {
               // Generate options
               const options =
@@ -488,11 +484,16 @@ const BookingForm = () => {
                       label: ele.BedNo,
                     }))
                     : [{ value: "", label: "No beds available", isDisabled: true }];
-
+               
               return (
                 <Select
                   {...field}
-                  value={options?.find((opt) => opt.value === field.value?.value || field.value)}
+                  // value={options?.find((opt) => opt.value === field.value?.value || field.value)}
+
+                   value={options?.find((opt) => {
+                    return opt.value === (field.value?.value ?? field.value);
+                  })}
+
                   isDisabled={isPropertySheetData}
                   options={options}
                   placeholder="Search & Select Bed No"
@@ -563,6 +564,10 @@ const BookingForm = () => {
           {renderError(`permanent_bedNo`)}
         </div>
       )}
+
+
+
+
       {activeTab === "temporary" && (
         <div className="relative">
           {/* Label with required asterisk */}
@@ -584,9 +589,7 @@ const BookingForm = () => {
             name={`temporary_bedNo`}
             control={control}
             defaultValue={
-              selectedBedNumber
-                ? { value: selectedBedNumber, label: selectedBedNumber }
-                : null
+              null
             }
             render={({ field }) => {
               // Generate options

@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, memo, useEffect } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import Select from "react-select";
@@ -21,68 +22,78 @@ const MemoizedSelect = memo(({ field, options, placeholder, isDisabled, onChange
 ));
 
 // Memoized Property Form Section
-const PropertyFormSection = memo(({ 
-  titlePrefix, 
-  control, 
-  errors, 
-  singleSheetData, 
-  isPropertySheetData, 
-  selectedBedNumber, 
-  handlePropertyCodeChange, 
-  handleBedNoChange, 
-  activeTab, 
-  register, 
+const PropertyFormSection = memo(({
+  titlePrefix,
+  control,
+  errors,
+  singleSheetData,
+  isPropertySheetData,
+  selectedBedNumber,
+  handlePropertyCodeChange,
+  handleBedNoChange,
+  activeTab,
+  register,
   setValue,
-  propertyList 
+  propertyList
 }) => {
   const inputClass = 'w-full px-3 py-2 mt-1 border-2 border-orange-500 rounded-md shadow focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400';
-  
+
   const renderError = (field) =>
     errors[field] && <p className="text-red-500 text-sm mt-1">{errors[field]?.message}</p>;
 
   // Use useWatch for better performance
   const watchStartDate = useWatch({
     control,
-    name: `${titlePrefix}bedRentStartDate`,
+    name: `${titlePrefix}BedDOJ`,
   });
-  
+  console.log("watchStartDate", watchStartDate)
   const watchEndDate = useWatch({
     control,
-    name: `${titlePrefix}bedRentEndDate`,
-  });
-  
-  const watchMonthlyRent = useWatch({
-    control,
-    name: `${titlePrefix}bedMonthlyRent`,
+    name: `${titlePrefix}BedLDt`,
   });
 
+  const watchMonthlyRent = useWatch({
+    control,
+    name: `${titlePrefix}BedMonthlyFixRent`,
+  });
   // Auto-calculate Rent Amount with useCallback to prevent recreation
   useEffect(() => {
     if (watchStartDate && watchMonthlyRent) {
       const start = new Date(watchStartDate);
       const end = watchEndDate ? new Date(watchEndDate) : null;
 
-      if (!isNaN(start)) {
+      // Normalize time to avoid issues with time zones
+      start.setHours(0, 0, 0, 0);
+      if (end) end.setHours(0, 0, 0, 0);
+
+      if (!isNaN(start.getTime())) {
         const dailyRent = parseFloat(watchMonthlyRent) / 30;
         let totalRent = 0;
 
-        if (activeTab === "temporary" && end && !isNaN(end)) {
-          const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
-          totalRent = Math.round(dailyRent * days);
+        if (end && !isNaN(end.getTime())) {
+          // 👉 Calculate rent from start to end (inclusive)
+          const diffTime = end.getTime() - start.getTime();
+          const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+          totalRent = Math.round(dailyRent * diffDays);
         } else {
+          // 👉 Calculate rent from start to end of the month (inclusive)
           const monthEnd = new Date(start.getFullYear(), start.getMonth() + 1, 0);
-          const days = Math.ceil((monthEnd - start) / (1000 * 60 * 60 * 24)) + 1;
-          totalRent = Math.round(dailyRent * days);
+          monthEnd.setHours(0, 0, 0, 0);
+
+          const diffTime = monthEnd.getTime() - start.getTime();
+          const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+          totalRent = Math.round(dailyRent * diffDays);
         }
 
-        setValue(`${titlePrefix}bedRentAmount`, totalRent);
+        setValue(`${titlePrefix}BedRentAmt`, totalRent);
       } else {
-        setValue(`${titlePrefix}bedRentAmount`, "");
+        setValue(`${titlePrefix}BedRentAmt`, "");
       }
     } else {
-      setValue(`${titlePrefix}bedRentAmount`, "");
+      setValue(`${titlePrefix}BedRentAmt`, "");
     }
-  }, [watchStartDate, watchEndDate, watchMonthlyRent, activeTab, setValue, titlePrefix]);
+  }, [watchStartDate, watchEndDate, watchMonthlyRent, setValue, titlePrefix]);
 
   // Select styles defined outside render to prevent recreation
   const selectStyles = {
@@ -141,7 +152,7 @@ const PropertyFormSection = memo(({
       <div>
         <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Property Code</label>
         <Controller
-          name={`${titlePrefix}propertyCode`}
+          name={`${titlePrefix}PropCode`}
           control={control}
           defaultValue={null}
           render={({ field }) => {
@@ -167,7 +178,7 @@ const PropertyFormSection = memo(({
             );
           }}
         />
-        {renderError(`${titlePrefix}propertyCode`)}
+        {renderError(`${titlePrefix}PropCode`)}
       </div>
 
       {/* Bed No */}
@@ -183,7 +194,7 @@ const PropertyFormSection = memo(({
         )}
 
         <Controller
-          name={`${titlePrefix}bedNo`}
+          name={`${titlePrefix}BedNo`}
           control={control}
           defaultValue={
             selectedBedNumber
@@ -218,7 +229,7 @@ const PropertyFormSection = memo(({
             );
           }}
         />
-        {renderError(`${titlePrefix}bedNo`)}
+        {renderError(`${titlePrefix}BedNo`)}
       </div>
 
       {/* Room No */}
@@ -226,11 +237,11 @@ const PropertyFormSection = memo(({
         <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Room No</label>
         <input
           type='text'
-          {...register(`${titlePrefix}roomNo`)}
+          {...register(`${titlePrefix}RoomNo`)}
           disabled
           className={inputClass}
         />
-        {renderError(`${titlePrefix}roomNo`)}
+        {renderError(`${titlePrefix}RoomNo`)}
       </div>
 
       {/* AC / Non AC */}
@@ -238,11 +249,11 @@ const PropertyFormSection = memo(({
         <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500"> AC / Non AC</label>
         <input
           type="text"
-          {...register(`${titlePrefix}roomAcNonAc`)}
+          {...register(`${titlePrefix}ACRoom`)}
           disabled
           className={inputClass}
         />
-        {renderError(`${titlePrefix}roomAcNonAc`)}
+        {renderError(`${titlePrefix}ACRoom`)}
       </div>
 
       {/* Monthly Fixed Rent */}
@@ -250,11 +261,11 @@ const PropertyFormSection = memo(({
         <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500"> Monthly Fixed Rent ( ₹ )</label>
         <input
           type="number"
-          {...register(`${titlePrefix}bedMonthlyRent`)}
+          {...register(`${titlePrefix}BedMonthlyFixRent`)}
           disabled
           className={inputClass}
         />
-        {renderError(`${titlePrefix}bedMonthlyRent`)}
+        {renderError(`${titlePrefix}BedMonthlyFixRent`)}
       </div>
 
       {/* Deposit Amount (only for permanent) */}
@@ -263,11 +274,11 @@ const PropertyFormSection = memo(({
           <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500"> Deposit Amount ( ₹ )</label>
           <input
             type="number"
-            {...register(`${titlePrefix}bedDepositAmount`)}
+            {...register(`${titlePrefix}BedDepositAmt`)}
             disabled
             className={inputClass}
           />
-          {renderError(`${titlePrefix}bedDepositAmount`)}
+          {renderError(`${titlePrefix}BedDepositAmt`)}
         </div>
       )}
 
@@ -276,10 +287,10 @@ const PropertyFormSection = memo(({
         <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Client DOJ</label>
         <input
           type="date"
-          {...register(`${titlePrefix}bedRentStartDate`)}
+          {...register(`${titlePrefix}BedDOJ`)}
           className={inputClass}
         />
-        {renderError(`${titlePrefix}bedRentStartDate`)}
+        {renderError(`${titlePrefix}BedDOJ`)}
       </div>
 
       {/* Client Last Date */}
@@ -288,10 +299,10 @@ const PropertyFormSection = memo(({
           <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Client Last Date </label>
           <input
             type="date"
-            {...register(`${titlePrefix}bedRentEndDate`)}
+            {...register(`${titlePrefix}BedLDt`)}
             className={inputClass}
           />
-          {renderError(`${titlePrefix}bedRentEndDate`)}
+          {renderError(`${titlePrefix}BedLDt`)}
         </div>
       )}
 
@@ -301,10 +312,10 @@ const PropertyFormSection = memo(({
           <label>Client Last Date (Optional)</label>
           <input
             type="date"
-            {...register(`${titlePrefix}bedRentEndDate`)}
+            {...register(`${titlePrefix}BedLDt`)}
             className={inputClass}
           />
-          {renderError(`${titlePrefix}bedRentEndDate`)}
+          {renderError(`${titlePrefix}BedLDt`)}
         </div>
       )}
 
@@ -313,11 +324,11 @@ const PropertyFormSection = memo(({
         <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500"> Rent Amount As Per Client DOJ ( ₹ )</label>
         <input
           type="number"
-          {...register(`${titlePrefix}bedRentAmount`)}
+          {...register(`${titlePrefix}BedRentAmt`)}
           className={inputClass}
           disabled={true}
         />
-        {renderError(`${titlePrefix}bedRentAmount`)}
+        {renderError(`${titlePrefix}BedRentAmt`)}
       </div>
 
       {/* Processing Fees (only for permanent) */}
@@ -326,10 +337,10 @@ const PropertyFormSection = memo(({
           <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Processing Fees ( ₹ )</label>
           <input
             type="text"
-            {...register(`${titlePrefix}processingFees`)}
+            {...register(`ProcessingFeesAmt`)}
             className={inputClass}
           />
-          {renderError(`${titlePrefix}processingFees`)}
+          {renderError(`ProcessingFeesAmt`)}
         </div>
       )}
 
@@ -339,11 +350,11 @@ const PropertyFormSection = memo(({
           <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Upcoming Rent Hike Date</label>
           <input
             type="text"
-            {...register(`${titlePrefix}revisionDate`)}
+            {...register(`${titlePrefix}UpcomingRentHikeDt`)}
             disabled
             className={inputClass}
           />
-          {renderError(`${titlePrefix}revisionDate`)}
+          {renderError(`${titlePrefix}UpcomingRentHikeDt`)}
         </div>
       )}
 
@@ -352,13 +363,13 @@ const PropertyFormSection = memo(({
         <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Upcoming Rent Hike Ammount ( ₹ )</label>
         <input
           type="text"
-          {...register(`${titlePrefix}revisionAmount`)}
+          {...register(`${titlePrefix}UpcomingRentHikeAmt`)}
           className={inputClass}
           disabled
         />
-        {renderError(`${titlePrefix}revisionAmount`)}
+        {renderError(`${titlePrefix}UpcomingRentHikeAmt`)}
       </div>
-      
+
       {/* Comments */}
       <div>
         <label>Comments</label>
@@ -381,85 +392,86 @@ const BookingForm = () => {
   const [formPreviewData, setFormPreviewData] = useState(null);
   const [selectedSheetId, setSelctedSheetId] = useState(null);
   const [selectedBedNumber, setSelectedBedNumber] = useState(null);
-  
+  const [permanentPropertyFilledChecked, setPermanentPropertyFilledChecked] = useState()
+
   // Validation schema
   const schema = yup.object().shape({
-    date: yup.date().required('Date is required'),
-    sales: yup.string().required('Sales person is required'),
-    clientName: yup.string().required('Client name is required'),
-    clientWhatsapp: yup
+    // Date: yup.date().required('Date is required'),
+    SalesMember: yup.string().required('Sales person is required'),
+    ClientFullName: yup.string().required('Client name is required'),
+    WhatsAppNo: yup
       .string()
       .matches(/^[0-9]{10}$/, 'Enter valid 10-digit WhatsApp number')
       .required('WhatsApp number is required'),
-    clientCalling: yup
+    CallingNo: yup
       .string()
       .matches(/^[0-9]{10}$/, 'Enter valid 10-digit calling number')
       .required('Calling number is required'),
-    fatherName: yup.string().required('Emergency Contact1 Full Name is required'),
-    fatherContact: yup
+    EmgyCont1FullName: yup.string().required('Emergency Contact1 Full Name is required'),
+    EmgyCont1No: yup
       .string()
       .matches(/^[0-9]{10}$/, 'Enter valid 10-digit contact number'),
-    motherName: yup.string().required('Emergency Contact2 Full Name is required'),
-    motherContact: yup
+    EmgyCont2FullName: yup.string().required('Emergency Contact2 Full Name is required'),
+    EmgyCont2No: yup
       .string()
       .matches(/^[0-9]{10}$/, 'Enter valid 10-digit contact number'),
 
     // Permanent
-    permanent_propertyCode: yup.string().when('$showPermanent', {
+    PermPropCode: yup.string().when('$showPermanent', {
       is: true,
       then: schema => schema.required('Property code is required'),
       otherwise: schema => schema,
     }),
-    permanent_bedNo: yup.string().when('$showPermanent', {
+    PermBedNo: yup.string().when('$showPermanent', {
       is: true,
       then: schema => schema.required('Bed number is required'),
       otherwise: schema => schema,
     }),
-    permanent_bedRentStartDate: yup.string().when('$showPermanent', {
+    PermBedDOJ: yup.string().when('$showPermanent', {
       is: true,
       then: schema => schema.required('Rent start date is required'),
       otherwise: schema => schema,
     }),
-    permanent_bedRentAmount: yup.number().when('$showPermanent', {
+    PermBedRentAmt: yup.number().when('$showPermanent', {
       is: true,
       then: schema => schema.required('Rent amount is required'),
       otherwise: schema => schema,
     }),
-    permanent_processingFees: yup.number().when('$showPermanent', {
+    ProcessingFeesAmt: yup.number().when('$showPermanent', {
       is: true,
-      then: schema => schema.required('Processing fee is required').typeError('Must be a number'),
+      then: schema => schema.required('Processing fee is required'),
       otherwise: schema => schema,
     }),
-    permanent_revisionDate: yup.date().when('$showPermanent', {
-      is: true,
-      then: schema => schema.required('Revision date is required'),
-      otherwise: schema => schema,
-    }),
+    // PermUpcomingRentHikeDt: yup.date().when('$showPermanent', {
+    //   is: true,
+    //   then: schema => schema.required('Revision date is required'),
+    //   otherwise: schema => schema,
+    // }),
 
     // temporary
-    temporary_propertyCode: yup.string().when('$showtemporary', {
+    TempPropCode: yup.string().when('$showtemporary', {
       is: true,
       then: schema => schema.required('Property code is required'),
       otherwise: schema => schema,
     }),
-    temporary_bedNo: yup.string().when('$showtemporary', {
+    TempBedNo: yup.string().when('$showtemporary', {
       is: true,
       then: schema => schema.required('Bed number is required'),
       otherwise: schema => schema,
     }),
-    temporary_roomNo: yup.string().when('$showtemporary', {
+    TempRoomNo: yup.string().when('$showtemporary', {
       is: true,
       then: schema => schema.required('Room number is required'),
       otherwise: schema => schema,
     }),
-    temporary_bedRentAmount: yup.number().when('$showtemporary', {
+    TempBedRentAmt: yup.string().when('$showtemporary', {
       is: true,
       then: schema => schema.required('Rent amount is required'),
       otherwise: schema => schema,
     }),
   });
 
- const { mutate: submitBooking, isLoading: isBookingLoading } = useAddBooking();
+  const { mutate: submitBooking, isLoading: isBookingLoading } = useAddBooking();
   const { data: propertyList, isLoading: isPropertyLoading } = usePropertyData();
   const { data: EmployeeDetails } = useEmployeeDetails();
   const { data: singleSheetData, isLoading: isPropertySheetData } = usePropertySheetData(selectedSheetId);
@@ -469,56 +481,81 @@ const BookingForm = () => {
     handleSubmit,
     setValue,
     resetField,
+    reset,
     control,
+    watch,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
     context: { showPermanent, showtemporary },
   });
 
+  console.log("errors", errors)
+
+  const formData = watch();
+
+  useEffect(() => {
+    if (!formData) return;
+
+    const permCount = Object.entries(formData)
+      .filter(([key, value]) =>
+        key.startsWith("Perm") &&
+        value !== null &&
+        value !== undefined &&
+        String(value).trim() !== ""
+      ).length;
+    setPermanentPropertyFilledChecked(permCount)
+    console.log("✅ Perm data count:", permCount);
+  }, [formData]);
+
+
+
+
+  // console.log(watch().PermBedMonthlyFixRent)
   // Memoized handlers to prevent recreation on each render
   const resetTabFields = useCallback((prefix) => {
     const fieldsToReset = [
-      "propertyCode",
-      "bedNo",
-      "roomNo",
-      "roomAcNonAc",
-      "bedMonthlyRent",
-      "bedDepositAmount",
-      "bedRentStartDate",
-      "bedRentEndDate",
-      "bedRentAmount",
-      "processingFees",
-      "revisionDate",
-      "revisionAmount",
+      "PropCode",
+      "BedNo",
+      "RoomNo",
+      "ACRoom",
+      "BedMonthlyFixRent",
+      "BedDepositAmt",
+      "BedDOJ",
+      "BedLDt",
+      "BedRentAmt",
+      "ProcessingFeesAmt",
+      "UpcomingRentHikeDt",
+      "UpcomingRentHikeAmt",
       "Comments"
     ];
 
     fieldsToReset.forEach((field) => {
       resetField(`${prefix}${field}`);
     });
+
   }, [resetField]);
 
   const AskFor = [
-  { value: "Booking_Amount", label: "Booking Amount" },
-  { value:"Full_Amount" , label: "Full Amount" }
-];
+    { value: "Booking_Amount", label: "Booking Amount" },
+    { value: "Full_Amount", label: "Full Amount" }
+  ];
 
   const handlePropertyCodeChange = useCallback((e, titlePrefix) => {
     const value = e.target.value;
     setSelctedSheetId(value);
 
-    setValue(`${titlePrefix}propertyCode`, value);
-    setValue(`${titlePrefix}roomAcNonAc`, "");
-    setValue(`${titlePrefix}bedNo`, "");
-    setValue(`${titlePrefix}bedRentAmount`, "");
+    setValue(`${titlePrefix}PropCode`, value);
+    setValue(`${titlePrefix}AcRoom`, "");
+    setValue(`${titlePrefix}BedNo`, "");
+    setValue(`${titlePrefix}BedRentAmt`, "");
     setValue(`${titlePrefix}roomNo`, "");
     setValue(`${titlePrefix}roomAcNonAc`, "");
-    setValue(`${titlePrefix}bedMonthlyRent`, "");
-    setValue(`${titlePrefix}bedDepositAmount`, "");
-    setValue(`${titlePrefix}revisionDate`, "");
-    setValue(`${titlePrefix}revisionAmount`, "");
-    setValue(`${titlePrefix}roomNo`, "");
+    setValue(`${titlePrefix}BedMonthlyFixRent`, "");
+    setValue(`${titlePrefix}BedDepositAmt`, "");
+    setValue(`${titlePrefix}ProcessingFeesAmount`, "");
+    setValue(`${titlePrefix}UpcomingRentHikeDt`, "");
+    setValue(`${titlePrefix}RoomNo`, "");
   }, [setValue]);
 
   const handleBedNoChange = useCallback((e, titlePrefix) => {
@@ -527,35 +564,35 @@ const BookingForm = () => {
     const matchedRow = singleSheetData?.data?.find(
       (row) => row["BedNo"]?.trim() === selectedBedNo
     );
-    
+
     if (matchedRow) {
       const acNonAc = matchedRow["ACRoom"]?.trim() || "";
       const rentAmt = matchedRow["MFR"] || "";
 
-      setValue(`${titlePrefix}roomAcNonAc`, acNonAc);
-      setValue(`${titlePrefix}bedNo`, selectedBedNo);
-      setValue(`${titlePrefix}bedMonthlyRent`, rentAmt);
-      setValue(`${titlePrefix}bedDepositAmount`, matchedRow["DA"]?.trim() || "");
-      setValue(`${titlePrefix}revisionDate`, matchedRow["URHD"]?.trim() || "");
-      setValue(`${titlePrefix}revisionAmount`, matchedRow["URHA"]?.trim() || "");
-      setValue(`${titlePrefix}roomNo`, matchedRow["RoomNo"]?.trim() || "");
+      setValue(`${titlePrefix}ACRoom`, acNonAc);
+      setValue(`${titlePrefix}BedNo`, selectedBedNo);
+      setValue(`${titlePrefix}BedMonthlyFixRent`, rentAmt);
+      setValue(`${titlePrefix}BedDepositAmt`, matchedRow["DA"]?.trim() || "");
+      setValue(`${titlePrefix}UpcomingRentHikeDt`, matchedRow["URHD"]?.trim() || "");
+      setValue(`${titlePrefix}UpcomingRentHikeAmt`, matchedRow["URHA"]?.trim() || "");
+      setValue(`${titlePrefix}RoomNo`, matchedRow["RoomNo"]?.trim() || "");
     } else {
-      setValue(`${titlePrefix}roomAcNonAc`, "");
-      setValue(`${titlePrefix}bedRentAmount`, "");
+      setValue(`${titlePrefix}AcRoom`, "");
+      setValue(`${titlePrefix}BedRentAmt`, "");
       setValue(`${titlePrefix}roomNo`, "");
       setValue(`${titlePrefix}roomAcNonAc`, "");
-      setValue(`${titlePrefix}bedMonthlyRent`, "");
-      setValue(`${titlePrefix}bedDepositAmount`, "");
-      setValue(`${titlePrefix}revisionDate`, "");
+      setValue(`${titlePrefix}BedMonthlyFixRent`, "");
+      setValue(`${titlePrefix}BedDepositAmt`, "");
+      setValue(`${titlePrefix}UpcomingRentHikeAmt`, "");
       setValue(`${titlePrefix}revisionAmount`, "");
-      setValue(`${titlePrefix}roomNo`, "");
-      setValue(`${titlePrefix}bedNo`, selectedBedNo);
+      setValue(`${titlePrefix}RoomNo`, "");
+      setValue(`${titlePrefix}BedNo`, selectedBedNo);
     }
   }, [singleSheetData, setValue]);
 
   const handlePermanentCheckbox = useCallback((checked) => {
     if (!checked) {
-      resetTabFields("permanent_");
+      resetTabFields("Perm");
     }
     setShowPermanent(checked);
     if (!checked && activeTab === 'permanent') {
@@ -568,7 +605,7 @@ const BookingForm = () => {
 
   const handletemporaryCheckbox = useCallback((checked) => {
     if (!checked) {
-      resetTabFields("temporary_");
+      resetTabFields("Temp");
     }
     setShowtemporary(checked);
     if (!checked && activeTab === 'temporary') {
@@ -581,27 +618,60 @@ const BookingForm = () => {
 
   const onSubmit = useCallback((data) => {
     // Always include client info
-    const filteredData = {
-      date: data.date,
-      sales: data.sales,
-      ClientFullName: data.clientName,
-      ClientWhatsAppNo: data.clientWhatsapp,
-      ClientCallingNo: data.clientCalling,
-      EmergencyContact1FullName: data.fatherName,
-      EmergencyContact1No: data.fatherContact,
-      EmergencyContact2FullName: data.motherName,
-      EmergencyContact2No: data.motherContact,
-      AskFor : data.askfor
-    };
+  const TotalAmt =
+  Number(data.PermBedDepositAmt) +
+  Number(data.PermBedRentAmt) +
+  Number(data.ProcessingFeesAmt);
+
+const filteredData = {
+  Date: new Date().toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }),
+  SalesMember: data.SalesMember,
+  AccountMember: data.AccountMember,
+  ClientFullName: data.ClientFullName,
+  WhatsAppNo: data.WhatsAppNo,
+  CallingNo: data.CallingNo,
+  EmgyCont1FullName: data.EmgyCont1FullName,
+  EmgyCont1No: data.EmgyCont1No,
+  EmgyCont2FullName: data.EmgyCont2FullName,
+  EmgyCont2No: data.EmgyCont2No,
+  AskForBAOrFA: data.AskForBAOrFA,
+
+  ProcessingFeesAmt: data.ProcessingFeesAmt,
+  UpcomingRentHikeDt: data.URHD,
+  UpcomingRentHikeAmt: data.URHA,
+  TotalAmt: TotalAmt,
+  BookingAmt:
+    data.AskForBAOrFA === "Full_Amount "
+      ? TotalAmt
+      : Number(data.PermBedMonthlyFixRent),
+  BalanceAmt:
+    data.AskForBAOrFA === "Full_Amount "
+      ? 0
+      : TotalAmt - Number(data.PermBedMonthlyFixRent),
+};
 
     // Include ONLY active tab fields
+    const dateFields = ["PermBedDOJ", "PermBedLDt", "TempBedDOJ", "TempBedLDt"];
     if (showPermanent) {
       Object.keys(data)
-        .filter((key) => key.startsWith("permanent_"))
+        .filter((key) => key.startsWith("Perm"))
         .forEach((key) => {
-          if (key === "permanent_propertyCode" && data[key]) {
+          if (key === "PermPropCode" && data[key]) {
             const parts = data[key].split(",");
-            filteredData[key] = parts[2] || ""; 
+            filteredData[key] = parts[2] || "";
+          } else if (dateFields.includes(key) && data[key]) {
+            const date = new Date(data[key]);
+            filteredData[key] = !isNaN(date)
+              ? date.toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+              : data[key];
           } else {
             filteredData[key] = data[key];
           }
@@ -610,34 +680,93 @@ const BookingForm = () => {
 
     if (showtemporary) {
       Object.keys(data)
-        .filter((key) => key.startsWith("temporary_"))
+        .filter((key) => key.startsWith("Temp"))
         .forEach((key) => {
-          if (key === "temporary_propertyCode" && data[key]) {
+          if (key === "TempPropCode" && data[key]) {
             const parts = data[key].split(",");
-            filteredData[key] = parts[2] || ""; // extract 3rd value
+            filteredData[key] = parts[2] || "";
+          } else if (dateFields.includes(key) && data[key]) {
+            const date = new Date(data[key]);
+            filteredData[key] = !isNaN(date)
+              ? date.toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+              : data[key];
           } else {
             filteredData[key] = data[key];
           }
         });
     }
 
+
     setFormPreviewData(filteredData);
     setShowConfirmModal(true);
   }, [showPermanent, showtemporary]);
-
- 
 
   const handleFinalSubmit = useCallback(() => {
     submitBooking(formPreviewData, {
       onSuccess: () => {
         alert("✅ Data successfully sent to Google Sheet!");
         setShowConfirmModal(false);
+
+        // Reset the entire form
+        reset({
+          Date: new Date().toISOString().split('T')[0],
+          SalesMember: "",
+          ClientFullName: "",
+          WhatsAppNo: "",
+          CallingNo: "",
+          EmgyCont1FullName: "",
+          EmgyCont1No: "",
+          EmgyCont2FullName: "",
+          EmgyCont2No: "",
+          AskForBAOrFA: "",
+          // Reset all permanent fields
+          PermPropCode: "",
+          PermBedNo: "",
+          PermRoomNo: "",
+          PermACRoom: "",
+          PermBedMonthlyFixRent: "",
+          PermBedDepositAmt: "",
+          PermBedDOJ: "",
+          PermBedLDt: "",
+          PermBedRentAmt: "",
+          ProcessingFeesAmt: "",
+          PermUpcomingRentHikeDt: "",
+          PermUpcomingRentHikeAmt: "",
+          PermComments: "",
+          // Reset all temporary fields
+          TempPropCode: "",
+          TempBedNo: "",
+          TempRoomNo: "",
+          TempACRoom: "",
+          TempBedMonthlyFixRent: "",
+          TempBedDepositAmt: "",
+          TempBedDOJ: "",
+          TempBedLDt: "",
+          TempBedRentAmt: "",
+          ProcessingFeesAmt: "",
+          TempUpcomingRentHikeDt: "",
+          TempUpcomingRentHikeAmt: "",
+          TempComments: ""
+        });
+        setValue(`SalesMemeber`, "Search & Select Employee");
+        setValue(`AskForBAOrFA`, "SelectAskFor");
+
+        // Reset checkboxes and tabs
+        setShowPermanent(false);
+        setShowtemporary(false);
+        setActiveTab('');
+        setSelctedSheetId(null);
+        setSelectedBedNumber(null);
       },
       onError: () => {
         alert("❌ Failed to submit. Try again.");
       },
     });
-  }, [submitBooking, formPreviewData]);
+  }, [submitBooking, formPreviewData, reset]);
 
   const inputClass = 'w-full px-3 py-2 mt-1 border-2 border-orange-500 rounded-md shadow focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400';
 
@@ -689,16 +818,16 @@ const BookingForm = () => {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
           {/* === CLIENT DETAILS === */}
           <section className="bg-orange-50 border border-gray-200 rounded-lg p-2 shadow-sm">
-            <h3 className="text-xl font-semibold mb-4 border-b pb-2 bg-orange-500 text-white p-2 rounded-lg">Client Details</h3>
+            <h3 className="text-xl font-semibold mb-4 border-b pb-2 bg-orange-500 text-white p-2 rounded-sm">Client Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {[
-                { name: 'clientName', label: 'Full Name' },
-                { name: 'clientWhatsapp', label: 'WhatsApp No' },
-                { name: 'clientCalling', label: 'Calling No' },
-                { name: 'fatherName', label: 'Emergency Contact1 Full Name' },
-                { name: 'fatherContact', label: 'Emergency Contact1 No' },
-                { name: 'motherName', label: 'Emergency Contact2 Full Name' },
-                { name: 'motherContact', label: 'Emergency Contact2 No' },
+                { name: 'ClientFullName', label: 'Full Name' },
+                { name: 'WhatsAppNo', label: 'WhatsApp No' },
+                { name: 'CallingNo', label: 'Calling No' },
+                { name: 'EmgyCont1FullName', label: 'Emergency Contact1 Full Name' },
+                { name: 'EmgyCont1No', label: 'Emergency Contact1 No' },
+                { name: 'EmgyCont2FullName', label: 'Emergency Contact2 Full Name' },
+                { name: 'EmgyCont2No', label: 'Emergency Contact2 No' },
               ].map((field) => (
                 <div key={field.name}>
                   <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500"
@@ -734,20 +863,23 @@ const BookingForm = () => {
             </label>
 
             {/* temporary Property Card */}
-            <label
-              className={`group cursor-pointer flex items-center gap-4 w-full sm:w-80 p-4 border rounded-xl transition-all duration-300 shadow-sm
+            {permanentPropertyFilledChecked > 0 && (
+
+              <label
+                className={`group cursor-pointer flex items-center gap-4 w-full sm:w-80 p-4 border rounded-xl transition-all duration-300 shadow-sm
       ${showtemporary ? ' border-orange-500 ring-2 ring-orange-500' : 'bg-white hover:shadow-lg'}`}
-            >
-              <input
-                type="checkbox"
-                className="accent-orange-500 w-5 h-5"
-                checked={showtemporary}
-                onChange={(e) => handletemporaryCheckbox(e.target.checked)}
-              />
-              <span className="text-lg font-medium text-gray-800 group-hover:text-orange-600">
-                temporary Property Details
-              </span>
-            </label>
+              >
+                <input
+                  type="checkbox"
+                  className="accent-orange-500 w-5 h-5"
+                  checked={showtemporary}
+                  onChange={(e) => handletemporaryCheckbox(e.target.checked)}
+                />
+                <span className="text-lg font-medium text-gray-800 group-hover:text-orange-600">
+                  Temporary Property Details
+                </span>
+              </label>
+            )}
           </div>
 
           {/* === TABS === */}
@@ -771,14 +903,14 @@ const BookingForm = () => {
                       }`}
                     onClick={() => setActiveTab('temporary')}
                   >
-                    temporary Property Details
+                    Temporary Property Details
                   </button>
                 )}
               </div>
 
               {activeTab === 'permanent' && showPermanent && (
-                <PropertyFormSection 
-                  titlePrefix="permanent_"
+                <PropertyFormSection
+                  titlePrefix="Perm"
                   control={control}
                   errors={errors}
                   singleSheetData={singleSheetData}
@@ -793,8 +925,8 @@ const BookingForm = () => {
                 />
               )}
               {activeTab === 'temporary' && showtemporary && (
-                <PropertyFormSection 
-                  titlePrefix="temporary_"
+                <PropertyFormSection
+                  titlePrefix="Temp"
                   control={control}
                   errors={errors}
                   singleSheetData={singleSheetData}
@@ -813,53 +945,83 @@ const BookingForm = () => {
 
           <div className="flex justify-center">
             <section className="bg-orange-50 border border-gray-200 rounded-lg p-2 shadow-sm">
-              <h3 className="text-xl font-semibold mb-4 border-b pb-2 bg-orange-500 text-white p-2 rounded-lg">Send Payment Details ...</h3>
+              <h3 className="text-xl font-semibold mb-4 border-b pb-2 bg-orange-500 text-white p-2 rounded-sm">Send Payment Details ...</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 {/* Date Field with default today */}
-                <div>
+                {/* <div>
                   <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Date</label>
                   <input
-                    type="date"
-                    {...register('date')}
+                    type="text"
+                    {...register('Date')}
                     readOnly
                     className={inputClass}
-                    defaultValue={new Date().toISOString().split('T')[0]}
+                    // defaultValue={}
                   />
-                  {renderError('date')}
-                </div>
+
+                  {renderError('Date')}
+                </div> */}
 
                 {/* Sales Dropdown */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Sales Person</label>
+                  <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Sales Member</label>
                   <Controller
-                    name="sales"
+                    name="SalesMember"
                     control={control}
                     defaultValue={null}
                     render={({ field }) => {
-                      const options = EmployeeDetails?.data?.map((ele) => ({
-                        value: `${ele.Name} (${ele.ID})`,
-                        label: `${ele.Name} — ID: ${ele.ID}`,
-                      }));
-
+                      const options = [
+                        { value: "N/A", label: "N/A" }, // Default option at the top
+                        ...(EmployeeDetails?.data?.map((ele) => ({
+                          value: `${ele.Name} (${ele.ID})`,
+                          label: `${ele.Name} — ID: ${ele.ID}`,
+                        })) || []),
+                      ];
                       return (
                         <MemoizedSelect
                           field={field}
                           options={options}
-                          placeholder="Search & Select Employee"
+                          placeholder="Search & Select Sales Member"
                           styles={employeeSelectStyles}
                           onChange={(selectedOption) => field.onChange(selectedOption ? selectedOption.value : "")}
                         />
                       );
                     }}
                   />
-                  {renderError('sales')}
+                  {renderError('SalesMember')}
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">Account Member</label>
+                  <Controller
+                    name="AccountMember"
+                    control={control}
+                    defaultValue={null}
+                    render={({ field }) => {
+                      const options = [
+                        { value: "N/A", label: "N/A" }, // Default option at the top
+                        ...(EmployeeDetails?.data?.map((ele) => ({
+                          value: `${ele.Name} (${ele.ID})`,
+                          label: `${ele.Name} — ID: ${ele.ID}`,
+                        })) || []),
+                      ];
 
+                      return (
+                        <MemoizedSelect
+                          field={field}
+                          options={options}
+                          placeholder="Search & Select Account Member"
+                          styles={employeeSelectStyles}
+                          onChange={(selectedOption) => field.onChange(selectedOption ? selectedOption.value : "")}
+                        />
+                      );
+                    }}
+                  />
+                  {renderError('AccountMember')}
+                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 after:content-['*'] after:ml-1 after:text-red-500">AskFor ₹</label>
                   <Controller
-                    name="askfor"
+                    name="AskForBAOrFA"
                     control={control}
                     defaultValue={null}
                     render={({ field }) => {
@@ -872,30 +1034,30 @@ const BookingForm = () => {
                         <MemoizedSelect
                           field={field}
                           options={options}
-                          placeholder="Search & Select Employee"
+                          placeholder="Search & Select Ask For"
                           styles={employeeSelectStyles}
                           onChange={(selectedOption) => field.onChange(selectedOption ? selectedOption.value : "")}
                         />
                       );
                     }}
                   />
-                  {renderError('askfor')}
+                  {renderError('AskForBAOrFA')}
                 </div>
 
               </div>
-                <div className='flex px-2  mt-5 justify-center'>
-                  <button
-                    type="submit"
-                    className="px-5 py-3 text-xl bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all shadow-md"
-                  >
-                    Submit Booking
-                  </button>
-                </div>
+              <div className='flex px-2  mt-5 justify-center'>
+                <button
+                  type="submit"
+                  className="px-5 py-3 text-xl bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all shadow-md"
+                >
+                  Submit Booking
+                </button>
+              </div>
             </section>
           </div>
         </form>
       </div>
-      
+
       <ConfirmationModel
         showConfirmModal={showConfirmModal}
         setShowConfirmModal={setShowConfirmModal}

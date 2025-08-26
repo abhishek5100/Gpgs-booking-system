@@ -133,7 +133,9 @@ Total Amount to be paid: ₹${totalAmount}
 
     const encodedMsg = encodeURIComponent(msg);
     const number = clientWhatsapp?.replace(/\D/g, "") || "";
-    window.open(`https://wa.me/${number}?text=${encodedMsg}`, "_blank");
+    // window.open(`https://wa.me/${number}?text=${encodedMsg}`, "_blank");
+        window.open(`https://api.whatsapp.com/send?phone=91${number}&text=${encodedMsg}`, "_blank");
+
   };
 
   if (!showConfirmModal) return null;

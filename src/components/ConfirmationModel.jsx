@@ -42,7 +42,7 @@ const ConfirmationModel = ({
   const shareOnWhatsApp = () => {
     const {
       ClientFullName,
-      clientWhatsapp,
+      WhatsAppNo,
       TempPropCode,
       TempRoomNo,
       TempBedNo,
@@ -132,7 +132,7 @@ Total Amount to be paid: ₹${totalAmount}
     msg += `Gopal's Paying Guest Services\n(Customer Care No: 8928191814 | Service Hours: 10AM to 7PM)\nNote: This is a system-generated message and does not require a signature.`;
 
     const encodedMsg = encodeURIComponent(msg);
-    const number = clientWhatsapp?.replace(/\D/g, "") || "";
+    const number = WhatsAppNo?.replace(/\D/g, "") || "";
     // window.open(`https://wa.me/${number}?text=${encodedMsg}`, "_blank");
         window.open(`https://api.whatsapp.com/send?phone=91${number}&text=${encodedMsg}`, "_blank");
 

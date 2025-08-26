@@ -11,7 +11,6 @@ const ConfirmationModel = ({
   // isBookingLoading
 }) => {
   const invoiceRef = useRef();
-  console.log(111, formPreviewData)
 
   const formatCurrency = (amt) =>
     amt ? `₹${parseInt(amt).toLocaleString('en-IN')}` : '-';
@@ -41,32 +40,100 @@ const ConfirmationModel = ({
 
 
   const shareOnWhatsApp = () => {
-    const msg = `
-Payment details of ${formPreviewData.clientName}
-Permanent PG Facility Code : ${formPreviewData.permanent_propertyCode}
-Permanent Room No. : ${formPreviewData.permanent_roomNo}
-Permanent Bed No. : ${formPreviewData.permanent_bedNo}
-Permanent Bed AC / Non AC : ${formPreviewData.permanent_roomAcNonAc}
-Permanent Bed Start Date : ${formPreviewData.permanent_bedRentStartDate}
-Permanent Bed Last Date : ${formPreviewData.permanent_bedRentEndDate || 'NA'}
+    const {
+      ClientFullName,
+      clientWhatsapp,
+      TempPropCode,
+      TempRoomNo,
+      TempBedNo,
+      TempACRoom,
+      TempBedDOJ,
+      TempBedLDt,
+      TempBedRentAmt,
+      TempBedMonthlyFixRent,
+      PermPropCode,
+      PermRoomNo,
+      PermBedNo,
+      PermACRoom,
+      PermBedDOJ,
+      PermBedLDt,
+      PermBedRentAmt,
+      PermBedMonthlyFixRent,
+      PermBedDepositAmt,
+      ProcessingFeesAmt,
+      AskForBAOrFA
+    } = formPreviewData;
 
-Permanent Bed Rent Amount : Rs. ${formPreviewData.permanent_bedRentAmount} ( This rent is from ${formPreviewData.permanent_bedRentStartDate} to ${formPreviewData.permanent_bedRentEndDate || 'NA'} , also please note the monthly fix rent of this bed is Rs. ${formPreviewData.permanent_bedMonthlyRent} )
-Permanent Bed Security Deposit Amount : Rs. ${formPreviewData.permanent_bedDepositAmount}
-Processing Fees : Rs. ${formPreviewData.permanent_processingFees}
-Total Amount to be paid : Rs. ${formPreviewData.totalAmount}
+    const formatDate = (dateStr) =>
+      dateStr
+        ? new Date(dateStr).toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+        : "NA";
 
-// Imp. Note : The booking is confirmed only after the booking amount Rs. ${formPreviewData.permanent_bedDepositAmount}  is received by us. The balance amount of Rs. ${formPreviewData.permanent_bedRentAmount - formPreviewData.permanent_bedDepositAmount} is to be paid on the date of joining.
+    const fallbackLastDate = formatDate(
+      new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
+    );
 
-Payment is not refundable if you cancel the booking for any reason, so before making any payment please read the agreement file sent on your whatsapp and if you have any concerns please let us know.
+    const formattedTempBedDOJ = formatDate(TempBedDOJ);
+    const formattedTempBedLDt = formatDate(TempBedLDt) || fallbackLastDate;
 
-Gopal's Paying Guest Services
-( Customer Care No : 8928191814
-Service Hours : 10AM to 7PM )
-  `.trim();
+    const formattedPermBedDOJ = formatDate(PermBedDOJ);
+    const formattedPermBedLDt = formatDate(PermBedLDt) || fallbackLastDate;
 
-    const number = formPreviewData.clientWhatsapp?.replace(/\D/g, '') || '';
+    const totalAmount =
+      Number(PermBedRentAmt || 0) +
+      Number(PermBedDepositAmt || 0) +
+      Number(ProcessingFeesAmt || 0) +
+      Number(TempBedRentAmt || 0);
+
+    const balanceAmount =
+      totalAmount - (AskForBAOrFA === "Booking_Amount " ? Number(PermBedMonthlyFixRent) : 0);
+
+    let msg = `Payment Details For ${ClientFullName}\n`;
+
+    if (TempPropCode) {
+      msg += `
+Temporary PG Facility Code: ${TempPropCode}
+Room No.: ${TempRoomNo}
+Bed No.: ${TempBedNo}
+AC Room: ${TempACRoom}
+Start Date: ${formattedTempBedDOJ}
+Last Date: ${formattedTempBedLDt}
+Temporary Bed Rent Amount: ₹${TempBedRentAmt} (This rent is from ${formattedTempBedDOJ} to ${formattedTempBedLDt}, monthly fixed rent is ₹${TempBedMonthlyFixRent})
+    `.trim() + "\n\n";
+    }
+
+    msg += `
+Permanent PG Facility Code: ${PermPropCode}
+Room No.: ${PermRoomNo}
+Bed No.: ${PermBedNo}
+AC Room: ${PermACRoom}
+Start Date: ${formattedPermBedDOJ}
+Last Date: ${formattedPermBedLDt}
+Permanent Bed Rent Amount: ₹${PermBedRentAmt} (This rent is from ${formattedPermBedDOJ} to ${formattedPermBedLDt}, monthly fixed rent is ₹${PermBedMonthlyFixRent})
+Permanent Bed Deposit Amount: ₹${PermBedDepositAmt}
+Processing Fees: ₹${ProcessingFeesAmt}
+Total Amount to be paid: ₹${totalAmount}
+`.trim();
+
+    msg += "\n\n";
+
+    if (AskForBAOrFA === "Booking_Amount ") {
+      msg += `📌 The booking is confirmed only after the booking amount ₹${PermBedMonthlyFixRent} is received by us. The balance amount ₹${balanceAmount} is to be paid before possession on the date of joining.\n`;
+    } else if (AskForBAOrFA === "Full_Amount ") {
+      msg += `📌 The booking is confirmed only after full amount ₹${totalAmount} is received by us.\n`;
+    }
+
+    msg += `📌 Payment is not refundable if you cancel the booking for any reason. Please read the agreement file sent to your WhatsApp and contact us if you have any concerns.\n\n`;
+
+    msg += `Gopal's Paying Guest Services\n(Customer Care No: 8928191814 | Service Hours: 10AM to 7PM)\nNote: This is a system-generated message and does not require a signature.`;
+
     const encodedMsg = encodeURIComponent(msg);
-    window.open(`https://wa.me/${number}?text=${encodedMsg}`, '_blank');
+    const number = clientWhatsapp?.replace(/\D/g, "") || "";
+    window.open(`https://wa.me/${number}?text=${encodedMsg}`, "_blank");
   };
 
   if (!showConfirmModal) return null;
@@ -85,40 +152,40 @@ Service Hours : 10AM to 7PM )
         <div ref={invoiceRef} className=" border  p-6 border-gray-300 rounded-md bg-white text-gray-800 space-y-4">
           <h1 className="text-xl font-bold text-center border-b pb-2 text-orange-500 ">Payment Details For {formPreviewData.ClientFullName}</h1>
 
-          {formPreviewData?.temporary_propertyCode && (
+          {formPreviewData?.TempPropCode && (
             <div className='flex justify-between p-2'>
               <section className='max-w-[50%]'>
                 <div>
-                  {formPreviewData?.temporary_propertyCode && (
+                  {formPreviewData?.TempPropCode && (
                     <p>
                       <strong>Temporary PG Facility Code :</strong>{" "}
-                      {formPreviewData.temporary_propertyCode}
+                      {formPreviewData.TempPropCode}
                     </p>
                   )}
 
-                  {formPreviewData?.temporary_roomNo && (
+                  {formPreviewData?.TempRoomNo && (
                     <p>
-                      <strong>Room No. :</strong> {formPreviewData.temporary_roomNo}
+                      <strong>Room No. :</strong> {formPreviewData.TempRoomNo}
                     </p>
                   )}
 
-                  {formPreviewData?.temporary_bedNo && (
+                  {formPreviewData?.TempBedNo && (
                     <p>
-                      <strong>Bed No. :</strong> {formPreviewData.temporary_bedNo}
+                      <strong>Bed No. :</strong> {formPreviewData.TempBedNo}
                     </p>
                   )}
 
-                  {formPreviewData?.temporary_roomAcNonAc && (
+                  {formPreviewData?.TempACRoom && (
                     <p>
-                      <strong>AC Room :</strong> {formPreviewData.temporary_roomAcNonAc}
+                      <strong>AC Room :</strong> {formPreviewData.TempACRoom}
                     </p>
                   )}
 
-                  {formPreviewData?.temporary_bedRentStartDate && (
+                  {formPreviewData?.TempBedDOJ && (
                     <p>
                       <strong>Start Date :</strong>{" "}
-                      {formPreviewData?.temporary_bedRentStartDate
-                        ? new Date(formPreviewData.temporary_bedRentStartDate).toLocaleDateString("en-GB", {
+                      {formPreviewData?.TempBedDOJ
+                        ? new Date(formPreviewData.TempBedDOJ).toLocaleDateString("en-GB", {
                           day: "2-digit",
                           month: "short",
                           year: "numeric",
@@ -129,13 +196,13 @@ Service Hours : 10AM to 7PM )
                   )}
 
                   {
-                    formPreviewData?.temporary_bedRentEndDate && (
+                    formPreviewData?.TempBedLDt && (
 
                       <p>
                         <strong>Last Date :</strong>{" "}
                         {
-                          formPreviewData?.temporary_bedRentEndDate
-                            ? new Date(formPreviewData.temporary_bedRentEndDate).toLocaleDateString("en-GB", {
+                          formPreviewData?.TempBedLDt
+                            ? new Date(formPreviewData.TempBedLDt).toLocaleDateString("en-GB", {
                               day: "2-digit",
                               month: "short",
                               year: "numeric",
@@ -155,22 +222,22 @@ Service Hours : 10AM to 7PM )
 
               <section className='max-w-[50%]'>
                 <div>
-                  {(formPreviewData?.temporary_bedRentAmount ||
-                    formPreviewData?.temporary_bedRentAmount_bedRentStartDate ||
-                    formPreviewData?.temporary_bedRentEndDate ||
-                    formPreviewData?.temporary_bedMonthlyRent) && (
+                  {(formPreviewData?.TempBedRentAmt ||
+                    formPreviewData?.TempBedRentAmt ||
+                    formPreviewData?.TempBedLDt ||
+                    formPreviewData?.TempBedMonthlyFixRent) && (
                       <p>
                         <strong>Temporary Bed Rent Amount :</strong> ₹{" "}
-                        {formPreviewData.temporary_bedRentAmount} (This rent is from{" "}
-                        {formPreviewData.permanent_bedRentStartDate} to{" "}
-                        {formPreviewData.temporary_bedRentEndDate ||
+                        {formPreviewData.TempBedRentAmt} (This rent is from{" "}
+                        {formPreviewData.PermBedDOJ} to{" "}
+                        {formPreviewData.TempBedLDt ||
                           new Date(
                             new Date().getFullYear(),
                             new Date().getMonth() + 1,
                             0
                           ).toISOString().split("T")[0]}
                         , also please note the monthly fixed rent of this bed is ₹{" "}
-                        {formPreviewData.temporary_bedMonthlyRent})
+                        {formPreviewData.TempBedMonthlyFixRent})
                       </p>
                     )}
 
@@ -180,7 +247,7 @@ Service Hours : 10AM to 7PM )
           )}
 
 
-          {formPreviewData?.temporary_propertyCode && (
+          {formPreviewData?.TempPropCode && (
             <hr />
           )}
 
@@ -193,24 +260,24 @@ Service Hours : 10AM to 7PM )
                 </h2> */}
                 <p>
                   <strong>Permanent PG Facility Code :</strong>{" "}
-                  {formPreviewData.permanent_propertyCode}
+                  {formPreviewData.PermPropCode}
                 </p>
                 <p>
                   <strong> Room No. :</strong>{" "}
-                  {formPreviewData.permanent_roomNo}
+                  {formPreviewData.PermRoomNo}
                 </p>
                 <p>
                   <strong> Bed No. :</strong>{" "}
-                  {formPreviewData.permanent_bedNo}
+                  {formPreviewData.PermBedNo}
                 </p>
                 <p>
                   <strong> AC Room : </strong>{" "}
-                  {formPreviewData.permanent_roomAcNonAc}
+                  {formPreviewData.PermACRoom}
                 </p>
                 <p>
                   <strong> Start Date :</strong>{" "}
-                  {formPreviewData?.permanent_bedRentStartDate
-                    ? new Date(formPreviewData.permanent_bedRentStartDate).toLocaleDateString("en-GB", {
+                  {formPreviewData?.PermBedDOJ
+                    ? new Date(formPreviewData.PermBedDOJ).toLocaleDateString("en-GB", {
                       day: "2-digit",
                       month: "short",
                       year: "numeric",
@@ -220,7 +287,14 @@ Service Hours : 10AM to 7PM )
                 </p>
                 <p>
                   <strong>  Last Date :</strong>{" "}
-                  {formPreviewData.permanent_bedRentEndDate || "NA"}
+                  {formPreviewData?.PermBedLDt
+                    ? new Date(formPreviewData.PermBedLDt).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })
+                    : "NA"}
+
                 </p>
               </div>
             </section>
@@ -232,38 +306,39 @@ Service Hours : 10AM to 7PM )
                 </h2> */}
                 <p>
                   <strong>Permanent Bed Rent Amount :</strong> ₹{" "}
-                  {formPreviewData.permanent_bedRentAmount} ( This rent is from{" "}
-                  {new Date(formPreviewData.permanent_bedRentStartDate).toLocaleDateString("en-GB", {
+                  {formPreviewData.PermBedRentAmt} ( This rent is from{" "}
+                  {new Date(formPreviewData.PermBedDOJ).toLocaleDateString("en-GB", {
                     day: "2-digit",
                     month: "short",
                     year: "numeric",
                   })} to{" "}
                   {new Date(
-                    formPreviewData.permanent_bedRentEndDate ||
+                    formPreviewData.PermBedLDt ||
                     new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
                   ).toLocaleDateString("en-GB", {
                     day: "2-digit",
                     month: "short",
                     year: "numeric",
                   })}, also please note the monthly fix rent of this bed is ₹{" "}
-                  {formPreviewData.permanent_bedMonthlyRent})
+                  {formPreviewData.PermBedMonthlyFixRent})
                 </p>
 
                 <p>
                   <strong>Permanent Bed Deposit Amount :</strong> ₹{" "}
-                  {formPreviewData.permanent_bedDepositAmount}
+                  {formPreviewData.PermBedDepositAmt}
                 </p>
                 <p>
                   <strong>Processing Fees :</strong> ₹{" "}
-                  {formPreviewData.permanent_processingFees}
+                  {formPreviewData.ProcessingFeesAmt}
                 </p>
                 <p>
                   <strong>Total Amount To Be paid :</strong> ₹{" "}
                   {
-                    Number(formPreviewData.permanent_bedRentAmount) +
-                    Number(formPreviewData.permanent_bedDepositAmount) +
-                    Number(formPreviewData.permanent_processingFees) +
-                    (formPreviewData.temporary_bedRentAmount ? Number(formPreviewData.temporary_bedRentAmount) : 0)
+
+                    Number(formPreviewData.PermBedRentAmt) +
+                    Number(formPreviewData.PermBedDepositAmt) +
+                    Number(formPreviewData.ProcessingFeesAmt) +
+                    (formPreviewData.TempBedRentAmt ? Number(formPreviewData.TempBedRentAmt) : 0)
                   }
                 </p>
               </div>
@@ -271,27 +346,27 @@ Service Hours : 10AM to 7PM )
             </section>
           </div>
           <section className="text-sm p-2 text-gray-600 border-t pt-2">
-            {formPreviewData.AskFor === "Booking_Amount " && (
+            {formPreviewData.AskForBAOrFA === "Booking_Amount " && (
               <p>
                 📌 The booking is confirmed only after the booking amount ₹{" "}
-                {formPreviewData.permanent_bedMonthlyRent} is received by us.
+                {formPreviewData.PermBedMonthlyFixRent} is received by us.
                 The balance amount ₹{" "}
 
-                {Number(formPreviewData.permanent_bedRentAmount) +
-                  Number(formPreviewData.permanent_bedDepositAmount) +
-                  Number(formPreviewData.permanent_processingFees) - formPreviewData.permanent_bedMonthlyRent}{" "}
+                {Number(formPreviewData.PermBedRentAmt) +
+                  Number(formPreviewData.PermBedDepositAmt) +
+                  Number(formPreviewData.ProcessingFeesAmt) - formPreviewData.PermBedMonthlyFixRent}{" "}
                 is to be paid before possession on the date of joining.
               </p>
             )}
-            {formPreviewData.AskFor === "Full_Amount " && (
+            {formPreviewData.AskForBAOrFA === "Full_Amount " && (
               <p>
                 📌 The booking is confirmed only after full amount ₹{" "}
-              {
-                    Number(formPreviewData.permanent_bedRentAmount) +
-                    Number(formPreviewData.permanent_bedDepositAmount) +
-                    Number(formPreviewData.permanent_processingFees) +
-                    (formPreviewData.temporary_bedRentAmount ? Number(formPreviewData.temporary_bedRentAmount) : 0)
-                  } is received by us.
+                {
+                  Number(formPreviewData.PermBedRentAmt) +
+                  Number(formPreviewData.PermBedDepositAmt) +
+                  Number(formPreviewData.ProcessingFeesAmt) +
+                  (formPreviewData.TempBedRentAmt ? Number(formPreviewData.TempBedRentAmt) : 0)
+                } is received by us.
               </p>
             )}
             <p>
@@ -305,8 +380,8 @@ Service Hours : 10AM to 7PM )
           <footer className=" text-sm text-center  border-t">
             <p className='text-orange-500 text-bold '>Gopal's Paying Guest Services</p>
             <p>( Customer Care No : 8928191814 | Service Hours : 10AM to 7PM )</p>
-                      <p className='text-[12px]'>Note: This is a system-generated document and does not require a signature.
-</p>
+            <p className='text-[12px]'>Note: This is a system-generated document and does not require a signature.
+            </p>
           </footer>
 
 

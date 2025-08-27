@@ -122,7 +122,7 @@ Bed No.: ${TempBedNo}
 AC Room: ${TempACRoom}
 Start Date: ${formattedTempBedDOJ}
 Last Date: ${formattedTempBedLDt}
-Temporary Bed Rent Amount: ₹${TempBedRentAmt} (This rent is from ${formattedTempBedDOJ} to ${formattedTempBedLDt}, monthly fixed rent is ₹${TempBedMonthlyFixRent})
+Temporary Bed Rent Amount: ₹${TempBedRentAmt} (This rent is from ${formattedTempBedDOJ} to ${endOfDOJMonth}, monthly fixed rent is ₹${TempBedMonthlyFixRent})
     `.trim() + "\n\n";
     }
 
@@ -133,7 +133,7 @@ Bed No.: ${PermBedNo}
 AC Room: ${PermACRoom}
 Start Date: ${formattedPermBedDOJ}
 Last Date: ${formattedPermBedLDt}
-Permanent Bed Rent Amount: ₹${PermBedRentAmt} (This rent is from ${formattedPermBedDOJ} to ${formattedPermBedLDt}, monthly fixed rent is ₹${PermBedMonthlyFixRent})
+Permanent Bed Rent Amount: ₹${PermBedRentAmt} (This rent is from ${formattedPermBedDOJ} to ${endOfDOJMonth}, monthly fixed rent is ₹${PermBedMonthlyFixRent})
 Permanent Bed Deposit Amount: ₹${PermBedDepositAmt}
 Processing Fees: ₹${ProcessingFeesAmt}
 Total Amount to be paid: ₹${totalAmount}

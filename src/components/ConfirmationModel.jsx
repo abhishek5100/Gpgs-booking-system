@@ -39,6 +39,26 @@ const ConfirmationModel = ({
   };
 
 
+
+  let endOfDOJMonth = null;
+
+if (formPreviewData?.PermBedDOJ) {
+  const dojDate = new Date(formPreviewData.PermBedDOJ);
+
+  if (!isNaN(dojDate)) {
+    endOfDOJMonth = new Date(
+      dojDate.getFullYear(),
+      dojDate.getMonth() + 1,
+      0
+    ).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  }
+}
+
+
   const shareOnWhatsApp = () => {
     const {
       ClientFullName,
@@ -78,10 +98,10 @@ const ConfirmationModel = ({
     );
 
     const formattedTempBedDOJ = formatDate(TempBedDOJ);
-    const formattedTempBedLDt = formatDate(TempBedLDt) || fallbackLastDate;
+    const formattedTempBedLDt = formatDate(TempBedLDt) || endOfDOJMonth;
 
     const formattedPermBedDOJ = formatDate(PermBedDOJ);
-    const formattedPermBedLDt = formatDate(PermBedLDt) || fallbackLastDate;
+    const formattedPermBedLDt = formatDate(PermBedLDt) || endOfDOJMonth;
 
     const totalAmount =
       Number(PermBedRentAmt || 0) +
@@ -133,10 +153,15 @@ Total Amount to be paid: ₹${totalAmount}
 
     const encodedMsg = encodeURIComponent(msg);
     const number = WhatsAppNo?.replace(/\D/g, "") || "";
+
     // window.open(`https://wa.me/${number}?text=${encodedMsg}`, "_blank");
-        window.open(`https://api.whatsapp.com/send?phone=91${number}&text=${encodedMsg}`, "_blank");
+    window.open(`https://api.whatsapp.com/send?phone=91${number}&text=${encodedMsg}`, "_blank");
+    // =HYPERLINK("https://api.whatsapp.com/send?phone="&ENCODEURL(91&$AE4)&"&text="&ENCODEURL($AC4),"Click Me")(
 
   };
+
+  // Assuming PermBedDOJ is in YYYY-MM-DD format
+
 
   if (!showConfirmModal) return null;
 
@@ -232,15 +257,11 @@ Total Amount to be paid: ₹${totalAmount}
                         <strong>Temporary Bed Rent Amount :</strong> ₹{" "}
                         {formPreviewData.TempBedRentAmt} (This rent is from{" "}
                         {formPreviewData.PermBedDOJ} to{" "}
-                        {formPreviewData.TempBedLDt ||
-                          new Date(
-                            new Date().getFullYear(),
-                            new Date().getMonth() + 1,
-                            0
-                          ).toISOString().split("T")[0]}
+                        {formPreviewData.TempBedLDt || endOfDOJMonth}
                         , also please note the monthly fixed rent of this bed is ₹{" "}
                         {formPreviewData.TempBedMonthlyFixRent})
                       </p>
+
                     )}
 
                 </div>
@@ -314,14 +335,10 @@ Total Amount to be paid: ₹${totalAmount}
                     month: "short",
                     year: "numeric",
                   })} to{" "}
-                  {new Date(
+                  {
                     formPreviewData.PermBedLDt ||
-                    new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
-                  ).toLocaleDateString("en-GB", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })}, also please note the monthly fix rent of this bed is ₹{" "}
+                    endOfDOJMonth 
+                    }, also please note the monthly fix rent of this bed is ₹{" "}
                   {formPreviewData.PermBedMonthlyFixRent})
                 </p>
 

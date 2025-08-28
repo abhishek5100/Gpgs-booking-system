@@ -57,7 +57,28 @@ if (formPreviewData?.PermBedDOJ) {
     });
   }
 }
+ console.log("endOfDOJMonth", endOfDOJMonth)
 
+  let tempEndOfDOJMonth = null;
+
+if (formPreviewData?.TempBedDOJ) {
+  const dojDate = new Date(formPreviewData.TempBedDOJ);
+
+  if (!isNaN(dojDate)) {
+    tempEndOfDOJMonth = new Date(
+      dojDate.getFullYear(),
+      dojDate.getMonth() + 1,
+      0
+    ).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  }
+}
+ console.log("tempEndOfDOJMonth", tempEndOfDOJMonth)
+
+// console.log("endOfDOJMonth", endOfDOJMonth)
 
   const shareOnWhatsApp = () => {
     const {
@@ -98,10 +119,10 @@ if (formPreviewData?.PermBedDOJ) {
     );
 
     const formattedTempBedDOJ = formatDate(TempBedDOJ);
-    const formattedTempBedLDt = formatDate(TempBedLDt) || endOfDOJMonth;
+    const formattedTempBedLDt = formatDate(TempBedLDt) || fallbackLastDate;
 
     const formattedPermBedDOJ = formatDate(PermBedDOJ);
-    const formattedPermBedLDt = formatDate(PermBedLDt) || endOfDOJMonth;
+    const formattedPermBedLDt = formatDate(PermBedLDt) || fallbackLastDate;
 
     const totalAmount =
       Number(PermBedRentAmt || 0) +
@@ -122,7 +143,7 @@ Bed No.: ${TempBedNo}
 AC Room: ${TempACRoom}
 Start Date: ${formattedTempBedDOJ}
 Last Date: ${formattedTempBedLDt}
-Temporary Bed Rent Amount: ₹${TempBedRentAmt} (This rent is from ${formattedTempBedDOJ} to ${endOfDOJMonth}, monthly fixed rent is ₹${TempBedMonthlyFixRent})
+Temporary Bed Rent Amount: ₹${TempBedRentAmt} (This rent is from ${formattedTempBedDOJ} to ${tempEndOfDOJMonth}, monthly fixed rent is ₹${TempBedMonthlyFixRent})
     `.trim() + "\n\n";
     }
 
@@ -256,8 +277,8 @@ Total Amount to be paid: ₹${totalAmount}
                       <p>
                         <strong>Temporary Bed Rent Amount :</strong> ₹{" "}
                         {formPreviewData.TempBedRentAmt} (This rent is from{" "}
-                        {formPreviewData.PermBedDOJ} to{" "}
-                        {formPreviewData.TempBedLDt || endOfDOJMonth}
+                        {formPreviewData.TempBedDOJ} to{" "}
+                        {formPreviewData.TempBedLDt || tempEndOfDOJMonth}
                         , also please note the monthly fixed rent of this bed is ₹{" "}
                         {formPreviewData.TempBedMonthlyFixRent})
                       </p>
@@ -373,7 +394,8 @@ Total Amount to be paid: ₹${totalAmount}
 
                 {Number(formPreviewData.PermBedRentAmt) +
                   Number(formPreviewData.PermBedDepositAmt) +
-                  Number(formPreviewData.ProcessingFeesAmt) - formPreviewData.PermBedMonthlyFixRent}{" "}
+                  Number(formPreviewData.ProcessingFeesAmt) +(formPreviewData.TempBedRentAmt ? Number(formPreviewData.TempBedRentAmt) : 0)
+                   - formPreviewData.PermBedMonthlyFixRent}{" "}
                 is to be paid before possession on the date of joining.
               </p>
             )}

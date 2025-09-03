@@ -134,10 +134,10 @@ if (formPreviewData?.TempBedDOJ) {
     const balanceAmount =
       totalAmount - (AskForBAOrFA === "Booking_Amount " ? Number(PermBedMonthlyFixRent) : 0);
 
+let msg = `Payment Details For ${ClientFullName} ( ${CallingNo} )/n`;
 
-  let msg = `Payment Details For ${ClientFullName} (https://wa.me/${CallingNo})`;
-  if (TempPropCode) {
-    msg += `
+    if (TempPropCode) {
+      msg += `
 Temporary PG Facility Code: ${TempPropCode}
 Room No.: ${TempRoomNo}
 Bed No.: ${TempBedNo}
@@ -146,9 +146,10 @@ Start Date: ${formattedTempBedDOJ}
 Last Date: ${formattedTempBedLDt}
 Temporary Bed Rent Amount: ₹${TempBedRentAmt} (This rent is from ${formattedTempBedDOJ} to ${tempEndOfDOJMonth}, monthly fixed rent is ₹${TempBedMonthlyFixRent})
     `.trim() + "\n\n";
-  }
+    }
 
     msg += `
+
 Permanent PG Facility Code: ${PermPropCode}
 Room No.: ${PermRoomNo}
 Bed No.: ${PermBedNo}

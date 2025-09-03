@@ -134,10 +134,9 @@ if (formPreviewData?.TempBedDOJ) {
     const balanceAmount =
       totalAmount - (AskForBAOrFA === "Booking_Amount " ? Number(PermBedMonthlyFixRent) : 0);
 
-    let msg = `Payment Details For ${ClientFullName} ( ${CallingNo} )     
-    `;
-
-    if (TempPropCode) {
+  let msg = `Payment Details For ${ClientFullName} ( ${CallingNo} )     
+   `;
+ if (TempPropCode) {
       msg += `
 Temporary PG Facility Code: ${TempPropCode}
 Room No.: ${TempRoomNo}

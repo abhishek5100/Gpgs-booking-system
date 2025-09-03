@@ -102,7 +102,8 @@ if (formPreviewData?.TempBedDOJ) {
       PermBedMonthlyFixRent,
       PermBedDepositAmt,
       ProcessingFeesAmt,
-      AskForBAOrFA
+      AskForBAOrFA,
+      CallingNo
     } = formPreviewData;
 
     const formatDate = (dateStr) =>
@@ -133,8 +134,9 @@ if (formPreviewData?.TempBedDOJ) {
     const balanceAmount =
       totalAmount - (AskForBAOrFA === "Booking_Amount " ? Number(PermBedMonthlyFixRent) : 0);
 
-    let msg = `Payment Details For ${ClientFullName}\n`;
-
+    let msg = `Payment Details For ${ClientFullName}\n (${CallingNo})`;
+    ""
+    ""
     if (TempPropCode) {
       msg += `
 Temporary PG Facility Code: ${TempPropCode}
@@ -198,7 +200,7 @@ Total Amount to be paid: ₹${totalAmount}
 
         {/* Invoice Preview */}
         <div ref={invoiceRef} className=" border  p-6 border-gray-300 rounded-md bg-white text-gray-800 space-y-4">
-          <h1 className="text-xl font-bold text-center border-b pb-2 text-orange-500 ">Payment Details For {formPreviewData.ClientFullName}</h1>
+          <h1 className="text-xl font-bold text-center border-b pb-2 text-orange-500 ">Payment Details For {formPreviewData.ClientFullName} ({formPreviewData.CallingNo})</h1>
 
           {formPreviewData?.TempPropCode && (
             <div className='flex justify-between p-2'>

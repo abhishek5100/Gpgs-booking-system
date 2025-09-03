@@ -135,7 +135,7 @@ if (formPreviewData?.TempBedDOJ) {
       totalAmount - (AskForBAOrFA === "Booking_Amount " ? Number(PermBedMonthlyFixRent) : 0);
 
 
-  let msg = `Payment Details For ${ClientFullName} ( ${CallingNo} )\n\n`;
+  let msg = `Payment Details For ${ClientFullName} ( ${CallingNo} )\n`;
 
   if (TempPropCode) {
     msg += `

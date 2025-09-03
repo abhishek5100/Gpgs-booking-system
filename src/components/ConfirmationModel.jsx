@@ -147,6 +147,7 @@ Last Date: ${formattedTempBedLDt}
 Temporary Bed Rent Amount: ₹${TempBedRentAmt} (This rent is from ${formattedTempBedDOJ} to ${tempEndOfDOJMonth}, monthly fixed rent is ₹${TempBedMonthlyFixRent})
     `.trim() + "\n\n";
     }
+  msg += "\n\n";
 
     msg += `
 

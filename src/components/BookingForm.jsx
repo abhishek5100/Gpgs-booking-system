@@ -889,7 +889,7 @@ const BookingForm = () => {
               {[
                 { name: 'ClientFullName', label: 'Full Name' },
                 { name: 'WhatsAppNo', label: 'WhatsApp No' },
-                { name: 'CallingNo', label: 'Calling No' },
+                { name: 'CallingNo', label: 'Calling No' , type:"number" },
                 { name: 'EmgyCont1FullName', label: 'Emergency Contact1 Full Name' },
                 { name: 'EmgyCont1No', label: 'Emergency Contact1 No' },
                 { name: 'EmgyCont2FullName', label: 'Emergency Contact2 Full Name' },
